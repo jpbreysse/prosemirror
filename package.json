@@ -1,0 +1,41 @@
+{
+  "name": "prosemirror-editor",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"node server.js\" \"vite\"",
+    "dev:api": "node server.js",
+    "dev:ui": "vite",
+    "build": "vite build",
+    "start": "NODE_ENV=production node server.js",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "chart.js": "^4.5.1",
+    "concurrently": "^9.2.1",
+    "cors": "^2.8.6",
+    "cytoscape": "^3.33.1",
+    "express": "^5.2.1",
+    "jszip": "^3.10.1",
+    "leaflet": "^1.9.4",
+    "marked": "^17.0.5",
+    "multer": "^2.1.1",
+    "pg": "^8.20.0",
+    "prosemirror-commands": "^1.6.0",
+    "prosemirror-example-setup": "^1.2.0",
+    "prosemirror-history": "^1.4.0",
+    "prosemirror-inputrules": "^1.4.0",
+    "prosemirror-keymap": "^1.2.0",
+    "prosemirror-model": "^1.23.0",
+    "prosemirror-schema-basic": "^1.2.0",
+    "prosemirror-schema-list": "^1.4.0",
+    "prosemirror-state": "^1.4.0",
+    "prosemirror-tables": "^1.8.5",
+    "prosemirror-transform": "^1.10.0",
+    "prosemirror-view": "^1.37.0",
+    "smiles-drawer": "^2.2.1"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}

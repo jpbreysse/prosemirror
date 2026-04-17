@@ -1,0 +1,335 @@
+/* ── Reset / base ─────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  background: #f4f4f5;
+  min-height: 100dvh;
+  color: #18181b;
+}
+
+/* ── Layout ──────────────────────────────────────────────────────────────────*/
+.docs-layout {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 4rem;
+}
+
+/* ── Header ──────────────────────────────────────────────────────────────────*/
+.docs-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.docs-header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.docs-logo {
+  flex-shrink: 0;
+}
+
+.docs-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #18181b;
+  line-height: 1.2;
+}
+
+.docs-subtitle {
+  font-size: 0.83rem;
+  color: #71717a;
+  margin-top: 2px;
+}
+
+/* ── Header action group ─────────────────────────────────────────────────────*/
+.docs-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* ── Import .docx button ────────────────────────────────────────────────────── */
+.docs-import-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  background: #fff;
+  color: #374151;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.docs-import-btn:hover    { background: #f8fafc; border-color: #cbd5e1; }
+.docs-import-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* ── Drag-and-drop overlay ───────────────────────────────────────────────────*/
+.docs-drop-zone {
+  position: fixed;
+  inset: 0;
+  background: rgba(99, 102, 241, 0.08);
+  border: 3px dashed #6366f1;
+  border-radius: 12px;
+  margin: 16px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.docs-drop-zone-inner {
+  text-align: center;
+  pointer-events: none;
+}
+.docs-drop-icon  { font-size: 3.5rem; margin-bottom: 12px; }
+.docs-drop-label {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #4338ca;
+  letter-spacing: -0.01em;
+}
+
+/* ── Import toast notification ───────────────────────────────────────────────*/
+.docs-import-toast {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%) translateY(12px);
+  padding: 10px 22px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  opacity: 0;
+  transition: opacity 0.2s, transform 0.2s;
+  z-index: 2000;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.docs-import-toast--visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+.docs-import-toast--info    { background: #1e293b; color: #fff; }
+.docs-import-toast--success { background: #166534; color: #fff; }
+.docs-import-toast--error   { background: #991b1b; color: #fff; }
+
+.docs-new-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 18px;
+  background: #6366f1;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.docs-new-btn:hover    { background: #4f46e5; }
+.docs-new-btn:disabled { background: #a5b4fc; cursor: not-allowed; }
+
+/* ── Search ──────────────────────────────────────────────────────────────────*/
+.docs-search-bar {
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+.docs-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+.docs-search-input {
+  width: 100%;
+  padding: 10px 14px 10px 36px;
+  border: 1px solid #e4e4e7;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: #fff;
+  color: #18181b;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.docs-search-input:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+}
+
+/* ── Grid ────────────────────────────────────────────────────────────────────*/
+.docs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+/* ── Card ────────────────────────────────────────────────────────────────────*/
+.docs-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  background: #fff;
+  border: 1px solid #e4e4e7;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: box-shadow 0.15s, border-color 0.15s, transform 0.1s;
+  text-decoration: none;
+  overflow: hidden;
+}
+.docs-card:hover {
+  border-color: #a5b4fc;
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.1);
+  transform: translateY(-1px);
+}
+.docs-card:hover .docs-card-delete,
+.docs-card:hover .docs-card-edit { opacity: 1; }
+
+/* Thumbnail / initials avatar */
+.docs-card-thumb {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  letter-spacing: 0.02em;
+}
+
+.docs-card-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.docs-card-title {
+  font-size: 0.93rem;
+  font-weight: 600;
+  color: #18181b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 5px;
+}
+
+.docs-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.75rem;
+  color: #a1a1aa;
+}
+
+.docs-card-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.docs-card-id {
+  font-family: monospace;
+  font-size: 0.7rem;
+  color: #d4d4d8;
+}
+
+/* Action buttons container */
+.docs-card-actions {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  gap: 4px;
+  z-index: 1;
+}
+
+/* Edit button */
+.docs-card-edit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: none;
+  background: #f1f5f9;
+  color: #6366f1;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s, color 0.15s;
+}
+.docs-card-edit:hover {
+  background: #eef2ff;
+  color: #4f46e5;
+}
+
+/* Delete button */
+.docs-card-delete {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #a1a1aa;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s, color 0.15s;
+}
+.docs-card-delete:hover {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+/* ── Empty state ─────────────────────────────────────────────────────────────*/
+.docs-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #a1a1aa;
+}
+.docs-empty-icon  { font-size: 3rem; margin-bottom: 1rem; }
+.docs-empty-title { font-size: 1.1rem; font-weight: 600; color: #52525b; margin-bottom: 0.4rem; }
+.docs-empty-sub   { font-size: 0.88rem; }
+
+/* ── API error banner ────────────────────────────────────────────────────── */
+.docs-api-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 80px 24px;
+  text-align: center;
+}
+.docs-api-error-icon  { font-size: 2.5rem; }
+.docs-api-error-title { font-size: 1.1rem; font-weight: 700; color: #1e293b; }
+.docs-api-error-sub   { font-size: 0.875rem; color: #64748b; line-height: 1.6; }
+.docs-api-error-sub code {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-family: ui-monospace, monospace;
+  font-size: 0.85em;
+  color: #7c3aed;
+}
+.docs-api-error-sub a { color: #6366f1; font-weight: 500; }

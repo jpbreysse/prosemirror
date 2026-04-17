@@ -1,0 +1,522 @@
+/* ── Reader page layout ───────────────────────────────────────────────────── */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #f8fafc;
+  min-height: 100vh;
+  font-family: system-ui, -apple-system, sans-serif;
+  color: #1e293b;
+}
+
+#reader-app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ── Top nav bar ─────────────────────────────────────────────────────────── */
+
+#reader-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 24px;
+  height: 52px;
+  background: rgba(255,255,255,0.9);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.rn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #6366f1;
+  text-decoration: none;
+  font-size: 0.83rem;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.rn-back:hover { background: #eef2ff; }
+
+.rn-title {
+  flex: 1;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #334155;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+}
+
+.rn-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 14px;
+  background: #6366f1;
+  color: #fff;
+  text-decoration: none;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 7px;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.rn-edit-btn:hover { background: #4f46e5; }
+
+/* ── Content area ────────────────────────────────────────────────────────── */
+
+#reader-body {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  padding: 48px 24px 80px;
+}
+
+#reader-content {
+  width: 100%;
+  max-width: 780px;
+}
+
+/* ── Override ProseMirror editor chrome ──────────────────────────────────── */
+
+/* Hide the toolbar & menu that would be rendered in editor mode */
+#toolbar { display: none !important; }
+
+/* ProseMirror root — remove editor border/shadow, use clean reading styles */
+.reader-pm-content.ProseMirror {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  background: transparent !important;
+  caret-color: transparent;    /* no blinking cursor in read mode */
+}
+
+/* Better reading typography */
+.reader-pm-content h1 {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1.2;
+  margin-bottom: 8px;
+  color: #0f172a;
+}
+.reader-pm-content h2 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin-top: 2rem;
+  margin-bottom: 6px;
+  color: #1e293b;
+}
+.reader-pm-content h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-top: 1.5rem;
+  margin-bottom: 4px;
+  color: #334155;
+}
+.reader-pm-content p {
+  font-size: 1rem;
+  line-height: 1.75;
+  color: #374151;
+  margin-bottom: 12px;
+}
+.reader-pm-content ul,
+.reader-pm-content ol {
+  padding-left: 1.5rem;
+  margin-bottom: 12px;
+}
+.reader-pm-content li {
+  line-height: 1.7;
+  color: #374151;
+}
+.reader-pm-content hr {
+  border: none;
+  border-top: 1px solid #e2e8f0;
+  margin: 2rem 0;
+}
+.reader-pm-content blockquote {
+  border-left: 3px solid #a5b4fc;
+  padding-left: 1rem;
+  color: #64748b;
+  font-style: italic;
+  margin: 1rem 0;
+}
+.reader-pm-content code {
+  background: #f1f5f9;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 0.88em;
+  font-family: "Fira Code", "Cascadia Code", monospace;
+}
+.reader-pm-content pre {
+  background: #1e293b;
+  color: #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
+  overflow-x: auto;
+  font-size: 0.88rem;
+  margin: 1rem 0;
+}
+
+/* Disable text-selection highlight colour in read mode (optional) */
+.reader-pm-content ::selection {
+  background: #c7d2fe;
+}
+
+/* ── Print doc header — only visible in print ───────────────────────────── */
+
+#print-doc-header { display: none; }
+
+/* ── Export PDF button ───────────────────────────────────────────────────── */
+
+.rn-pdf-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 14px;
+  background: #fff;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 7px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s;
+  font-family: inherit;
+}
+.rn-pdf-btn:hover { background: #f9fafb; border-color: #9ca3af; }
+.rn-pdf-btn svg   { opacity: 0.7; }
+
+/* ── Error state ─────────────────────────────────────────────────────────── */
+
+.reader-error {
+  margin: 80px auto;
+  max-width: 480px;
+  text-align: center;
+  color: #6b7280;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+.reader-error a {
+  color: #6366f1;
+  text-decoration: none;
+  font-weight: 500;
+}
+.reader-error a:hover { text-decoration: underline; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PRINT / PDF EXPORT
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media print {
+
+  /* ── Page setup ──────────────────────────────────────────────────────────── */
+
+  @page {
+    size: A4;
+    margin: 25mm 20mm 25mm 25mm;   /* top right bottom left — generous legal margins */
+    @bottom-center {
+      content: counter(page) " / " counter(pages);
+      font-size: 9pt;
+      color: #64748b;
+    }
+  }
+
+  /* ── Hide everything except the document ─────────────────────────────────── */
+
+  #reader-nav,
+  .rn-back,
+  .rn-pdf-btn,
+  .rn-edit-btn,
+  .clb-actions,
+  .clb-editor-overlay,
+  .clb-expand-btn,
+  .pb-actions,
+  .pb-editor-overlay,
+  .rm-editor-overlay,
+  .cb-form-overlay,
+  #toolbar { display: none !important; }
+
+  /* ── Page & body ─────────────────────────────────────────────────────────── */
+
+  html, body {
+    background: #fff !important;
+    color: #000 !important;
+    font-size: 10.5pt;
+    font-family: "Georgia", "Times New Roman", serif;
+  }
+
+  #reader-body {
+    padding: 0 !important;
+    display: block !important;
+  }
+
+  #reader-content {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  /* ── Document header ─────────────────────────────────────────────────────── */
+
+  .print-doc-header {
+    display: flex !important;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-bottom: 10pt;
+    border-bottom: 1.5pt solid #000;
+    margin-bottom: 18pt;
+  }
+
+  .print-doc-header-title {
+    font-size: 13pt;
+    font-weight: bold;
+    font-family: "Georgia", serif;
+    color: #000;
+  }
+
+  .print-doc-header-meta {
+    font-size: 8pt;
+    color: #4b5563;
+    text-align: right;
+    line-height: 1.6;
+  }
+
+  /* ── Typography ──────────────────────────────────────────────────────────── */
+
+  .reader-pm-content h1 {
+    font-size: 18pt !important;
+    font-family: "Georgia", serif !important;
+    font-weight: bold !important;
+    margin-bottom: 6pt !important;
+    color: #000 !important;
+    page-break-after: avoid;
+  }
+
+  .reader-pm-content h2 {
+    font-size: 13pt !important;
+    font-family: "Georgia", serif !important;
+    font-weight: bold !important;
+    margin-top: 18pt !important;
+    margin-bottom: 4pt !important;
+    color: #000 !important;
+    page-break-after: avoid;
+  }
+
+  .reader-pm-content h3 {
+    font-size: 11pt !important;
+    font-weight: bold !important;
+    margin-top: 14pt !important;
+    margin-bottom: 3pt !important;
+    page-break-after: avoid;
+  }
+
+  .reader-pm-content p {
+    font-size: 10.5pt !important;
+    line-height: 1.65 !important;
+    margin-bottom: 7pt !important;
+    color: #000 !important;
+    text-align: justify;
+    orphans: 3;
+    widows: 3;
+  }
+
+  .reader-pm-content ul,
+  .reader-pm-content ol {
+    margin-bottom: 7pt !important;
+    padding-left: 18pt !important;
+  }
+
+  .reader-pm-content li {
+    font-size: 10.5pt !important;
+    line-height: 1.6 !important;
+    color: #000 !important;
+  }
+
+  .reader-pm-content blockquote {
+    border-left: 2pt solid #000 !important;
+    padding-left: 10pt !important;
+    color: #374151 !important;
+    font-style: italic !important;
+    margin: 8pt 0 !important;
+  }
+
+  /* ── Clause Block ────────────────────────────────────────────────────────── */
+
+  .clb-block {
+    border: 1pt solid #000 !important;
+    border-radius: 0 !important;
+    padding: 10pt 12pt !important;
+    margin: 12pt 0 !important;
+    page-break-inside: avoid;
+    background: #fff !important;
+    box-shadow: none !important;
+  }
+
+  .clb-header {
+    margin-bottom: 4pt !important;
+  }
+
+  .clb-title {
+    font-size: 11pt !important;
+    font-weight: bold !important;
+    font-family: "Georgia", serif !important;
+    color: #000 !important;
+    margin-bottom: 3pt !important;
+  }
+
+  .clb-meta {
+    font-size: 8pt !important;
+    color: #4b5563 !important;
+    margin-bottom: 6pt !important;
+  }
+
+  .clb-text {
+    font-size: 10pt !important;
+    line-height: 1.6 !important;
+    color: #111 !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .clb-divider {
+    border-top: 0.5pt solid #d1d5db !important;
+    margin: 6pt 0 !important;
+  }
+
+  .clb-tags {
+    margin-top: 5pt !important;
+    font-size: 8pt !important;
+    color: #4b5563 !important;
+  }
+
+  .clb-tag {
+    border: 0.5pt solid #9ca3af !important;
+    background: #fff !important;
+    color: #374151 !important;
+    padding: 0 4pt !important;
+    margin-right: 3pt !important;
+    border-radius: 0 !important;
+  }
+
+  .clb-badge {
+    border: 0.5pt solid #9ca3af !important;
+    background: #fff !important;
+    color: #374151 !important;
+    font-size: 7.5pt !important;
+    padding: 0 4pt !important;
+    border-radius: 0 !important;
+  }
+
+  /* ── Party Block ─────────────────────────────────────────────────────────── */
+
+  .pb-block {
+    border: 1pt solid #000 !important;
+    border-radius: 0 !important;
+    padding: 10pt 12pt !important;
+    margin: 12pt 0 !important;
+    page-break-inside: avoid;
+    background: #fff !important;
+    box-shadow: none !important;
+  }
+
+  .pb-title {
+    font-size: 11pt !important;
+    font-weight: bold !important;
+    font-family: "Georgia", serif !important;
+    color: #000 !important;
+    margin-bottom: 2pt !important;
+  }
+
+  .pb-sub {
+    font-size: 9pt !important;
+    color: #374151 !important;
+    margin-bottom: 6pt !important;
+  }
+
+  .pb-detail-row {
+    font-size: 9pt !important;
+    color: #111 !important;
+    margin-bottom: 2pt !important;
+  }
+
+  .pb-badge {
+    border: 0.5pt solid #9ca3af !important;
+    background: #fff !important;
+    color: #374151 !important;
+    font-size: 7.5pt !important;
+    padding: 0 4pt !important;
+    border-radius: 0 !important;
+  }
+
+  /* Signature line for party blocks */
+  .pb-block::after {
+    display: block;
+    content: "Signature: ___________________________________  Date: _______________";
+    margin-top: 14pt;
+    font-size: 9pt;
+    color: #374151;
+    border-top: 0.5pt solid #9ca3af;
+    padding-top: 8pt;
+  }
+
+  /* ── Risk Matrix ─────────────────────────────────────────────────────────── */
+
+  .rm-block {
+    border: 1pt solid #000 !important;
+    border-radius: 0 !important;
+    padding: 8pt 10pt !important;
+    margin: 12pt 0 !important;
+    page-break-inside: avoid;
+    background: #fff !important;
+    box-shadow: none !important;
+    font-size: 8pt !important;
+  }
+
+  /* ── Tables ──────────────────────────────────────────────────────────────── */
+
+  table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+    font-size: 9.5pt !important;
+    page-break-inside: auto;
+  }
+
+  th, td {
+    border: 0.5pt solid #374151 !important;
+    padding: 4pt 6pt !important;
+  }
+
+  th {
+    background: #f1f5f9 !important;
+    font-weight: bold !important;
+    color: #000 !important;
+  }
+
+  tr { page-break-inside: avoid; }
+
+  /* ── Page break helpers ──────────────────────────────────────────────────── */
+
+  .page-break-before { page-break-before: always; }
+  .page-break-after  { page-break-after:  always; }
+
+  /* ── Search / loading / error states — hide in print ────────────────────── */
+
+  .clb-search,
+  .clb-loading,
+  .clb-error,
+  .pb-search,
+  .pb-loading,
+  .pb-error  { display: none !important; }
+
+}

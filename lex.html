@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LexDraft — Clause Library</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --sidebar-w: 320px;
+      --accent:    #6366f1;
+      --accent-2:  #0891b2;
+      --bg:        #f8fafc;
+      --panel:     #ffffff;
+      --border:    #e2e8f0;
+      --text:      #1e293b;
+      --muted:     #94a3b8;
+      --risk-low:      #22c55e;
+      --risk-medium:   #f59e0b;
+      --risk-high:     #f97316;
+      --risk-critical: #ef4444;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Top bar ── */
+    header {
+      height: 52px;
+      background: #1e1b4b;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 16px;
+      flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .logo { font-size: 1.05rem; font-weight: 800; letter-spacing: -0.02em; }
+    .logo span { color: #a5b4fc; }
+    .header-nav { display: flex; gap: 4px; margin-left: 12px; }
+    .nav-btn {
+      background: rgba(255,255,255,0.1);
+      border: none; border-radius: 6px;
+      color: rgba(255,255,255,0.8);
+      padding: 5px 12px; font-size: 0.8rem;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .nav-btn:hover  { background: rgba(255,255,255,0.2); }
+    .nav-btn.active { background: var(--accent); color: #fff; }
+    .header-spacer { flex: 1; }
+    .header-actions { display: flex; gap: 8px; }
+    .btn-primary {
+      background: var(--accent); color: #fff;
+      border: none; border-radius: 7px;
+      padding: 7px 16px; font-size: 0.82rem; font-weight: 600;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .btn-primary:hover { background: #4f46e5; }
+    .btn-secondary {
+      background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.85);
+      border: 1px solid rgba(255,255,255,0.2); border-radius: 7px;
+      padding: 6px 14px; font-size: 0.82rem;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .btn-secondary:hover { background: rgba(255,255,255,0.18); }
+
+    /* ── Main layout ── */
+    .main {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* ── Sidebar ── */
+    aside {
+      width: var(--sidebar-w);
+      background: var(--panel);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+    .sidebar-toolbar {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .search-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 10px;
+    }
+    .search-box svg { color: var(--muted); flex-shrink: 0; }
+    .search-box input {
+      border: none; background: transparent;
+      font-size: 0.85rem; color: var(--text);
+      outline: none; flex: 1;
+    }
+    .filter-row { display: flex; gap: 6px; }
+    .filter-select {
+      flex: 1; border: 1px solid var(--border); border-radius: 6px;
+      padding: 5px 8px; font-size: 0.78rem; color: var(--text);
+      background: var(--panel); outline: none; cursor: pointer;
+    }
+
+    .clause-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 0;
+    }
+    .clause-item {
+      padding: 10px 14px;
+      cursor: pointer;
+      border-left: 3px solid transparent;
+      transition: background 0.12s, border-color 0.12s;
+    }
+    .clause-item:hover   { background: #f1f5f9; }
+    .clause-item.active  { background: #eef2ff; border-left-color: var(--accent); }
+    .ci-top { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+    .ci-title { font-size: 0.85rem; font-weight: 600; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ci-meta  { font-size: 0.72rem; color: var(--muted); display: flex; gap: 8px; }
+    .ci-review { color: #f59e0b; font-weight: 600; }
+
+    .badge {
+      display: inline-flex; align-items: center;
+      padding: 1px 7px; border-radius: 999px;
+      font-size: 0.67rem; font-weight: 700; color: #fff;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .badge-sm { font-size: 0.63rem; padding: 1px 5px; }
+
+    /* ── Detail panel ── */
+    .detail {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 22px;
+    }
+    .detail-empty {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      gap: 12px;
+    }
+    .detail-empty-icon { font-size: 3rem; }
+    .detail-empty-text { font-size: 0.9rem; }
+
+    /* Detail content */
+    .detail-header {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .detail-header-top {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .detail-icon {
+      font-size: 1.5rem;
+      background: #eef2ff;
+      border-radius: 10px;
+      width: 42px; height: 42px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .detail-header-info { flex: 1; min-width: 0; }
+    .detail-title {
+      font-size: 1rem; font-weight: 800; color: var(--text);
+      margin-bottom: 5px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .detail-badges { display: flex; gap: 5px; flex-wrap: wrap; }
+    .detail-meta {
+      font-size: 0.75rem;
+      color: var(--muted);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 14px;
+      align-items: center;
+    }
+    .detail-header-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 2px;
+    }
+    .btn-edit {
+      background: var(--accent); color: #fff;
+      border: none; border-radius: 6px;
+      padding: 6px 12px; font-size: 0.78rem; font-weight: 600;
+      cursor: pointer; white-space: nowrap;
+    }
+    .btn-edit:hover { background: #4f46e5; }
+    .btn-outline {
+      background: #fff; color: var(--text);
+      border: 1px solid var(--border); border-radius: 6px;
+      padding: 5px 10px; font-size: 0.78rem;
+      cursor: pointer; white-space: nowrap;
+    }
+    .btn-outline:hover { background: #f8fafc; border-color: #94a3b8; }
+    .btn-danger {
+      background: #fff; color: #ef4444;
+      border: 1px solid #fecaca; border-radius: 6px;
+      padding: 5px 10px; font-size: 0.78rem;
+      cursor: pointer; white-space: nowrap;
+    }
+    .btn-danger:hover { background: #fef2f2; }
+
+    /* Clause text */
+    .detail-section { margin-bottom: 20px; }
+    .section-label {
+      font-size: 0.72rem; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.06em;
+      margin-bottom: 8px;
+    }
+    .clause-text-box {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 18px;
+      font-size: 0.88rem;
+      font-family: Georgia, serif;
+      line-height: 1.75;
+      color: #334155;
+      white-space: pre-wrap;
+      font-style: italic;
+    }
+
+    /* Tags */
+    .tags-row { display: flex; gap: 6px; flex-wrap: wrap; }
+    .tag-chip {
+      background: #f1f5f9; color: #475569;
+      padding: 3px 10px; border-radius: 999px;
+      font-size: 0.75rem;
+    }
+
+    /* Version history */
+    .version-list { display: flex; flex-direction: column; gap: 6px; }
+    .version-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.8rem;
+    }
+    .version-num {
+      width: 28px; height: 28px;
+      background: var(--accent);
+      color: #fff; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.72rem; font-weight: 700;
+      flex-shrink: 0;
+    }
+    .version-num.current { background: #10b981; }
+    .version-info { flex: 1; }
+    .version-date  { color: var(--muted); font-size: 0.73rem; }
+    .version-by    { font-weight: 600; }
+
+    /* Risk indicator */
+    .risk-bar {
+      height: 8px; border-radius: 999px;
+      background: #e2e8f0; position: relative; overflow: hidden;
+      margin-top: 4px;
+    }
+    .risk-fill { height: 100%; border-radius: 999px; transition: width 0.4s; }
+
+    /* Edit modal */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.4);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1000;
+    }
+    .modal-panel {
+      background: #fff; border-radius: 12px;
+      padding: 24px; width: 520px;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.18);
+      display: flex; flex-direction: column; gap: 14px;
+    }
+    .modal-title { font-size: 1rem; font-weight: 800; }
+    .modal-field { display: flex; flex-direction: column; gap: 4px; }
+    .modal-label { font-size: 0.75rem; font-weight: 600; color: #64748b; }
+    .modal-input, .modal-select, .modal-textarea {
+      border: 1px solid var(--border); border-radius: 7px;
+      padding: 8px 10px; font-size: 0.85rem; outline: none;
+    }
+    .modal-input:focus, .modal-select:focus, .modal-textarea:focus { border-color: var(--accent); }
+    .modal-textarea { resize: vertical; min-height: 120px; font-family: Georgia, serif; font-style: italic; line-height: 1.65; }
+    .modal-footer { display: flex; justify-content: flex-end; gap: 8px; }
+    .modal-cancel {
+      border: 1px solid var(--border); background: #fff;
+      border-radius: 7px; padding: 7px 16px; font-size: 0.83rem; cursor: pointer;
+    }
+    .modal-save {
+      background: var(--accent); color: #fff;
+      border: none; border-radius: 7px; padding: 7px 18px;
+      font-size: 0.83rem; font-weight: 700; cursor: pointer;
+    }
+    .modal-save:hover { background: #4f46e5; }
+
+    /* Toasts */
+    .toast {
+      position: fixed; bottom: 20px; right: 20px;
+      background: #1e293b; color: #fff;
+      padding: 10px 18px; border-radius: 8px;
+      font-size: 0.83rem; font-weight: 600;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+      opacity: 0; transform: translateY(8px);
+      transition: opacity 0.2s, transform 0.2s;
+      z-index: 9999;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.success { background: #166534; }
+    .toast.error   { background: #991b1b; }
+
+    /* Spinner */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      width: 32px; height: 32px;
+      border: 3px solid #e2e8f0;
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    /* Stats bar */
+    .stats-bar {
+      display: flex;
+      gap: 12px;
+      padding: 8px 14px;
+      border-top: 1px solid var(--border);
+      font-size: 0.72rem;
+      color: var(--muted);
+      background: #f8fafc;
+      flex-shrink: 0;
+    }
+    .stat { display: flex; align-items: center; gap: 4px; }
+    .stat-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  </style>
+</head>
+<body>
+  <!-- ── Header ── -->
+  <header>
+    <div class="logo">Lex<span>Draft</span></div>
+    <nav class="header-nav">
+      <button class="nav-btn active" data-view="clauses">📋 Clauses</button>
+      <button class="nav-btn" data-view="parties">🏢 Parties</button>
+      <button class="nav-btn" data-view="matters">📁 Matters</button>
+    </nav>
+    <div class="header-spacer"></div>
+    <div class="header-actions">
+      <button class="btn-secondary" id="openEditorBtn">← Back to Editor</button>
+      <button class="btn-primary" id="newBtn">+ New Clause</button>
+    </div>
+  </header>
+
+  <!-- ── Main ── -->
+  <div class="main">
+    <!-- Sidebar -->
+    <aside>
+      <div class="sidebar-toolbar">
+        <div class="search-box">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+          </svg>
+          <input type="text" id="searchInput" placeholder="Search clauses…" />
+        </div>
+        <div class="filter-row" id="clauseFilters">
+          <select class="filter-select" id="categoryFilter">
+            <option value="">All categories</option>
+            <option value="liability">Liability</option>
+            <option value="indemnity">Indemnity</option>
+            <option value="confidentiality">Confidentiality</option>
+            <option value="payment">Payment</option>
+            <option value="termination">Termination</option>
+            <option value="IP">IP</option>
+            <option value="dispute">Dispute</option>
+            <option value="warranty">Warranty</option>
+            <option value="data_protection">Data Protection</option>
+            <option value="general">General</option>
+          </select>
+          <select class="filter-select" id="riskFilter">
+            <option value="">All risk levels</option>
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+            <option value="critical">Critical</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="clause-list" id="clauseList">
+        <div style="padding:20px;text-align:center;color:#94a3b8;font-size:0.83rem;">Loading…</div>
+      </div>
+
+      <div class="stats-bar" id="statsBar">
+        <span class="stat"><span class="stat-dot" style="background:#22c55e"></span> Low</span>
+        <span class="stat"><span class="stat-dot" style="background:#f59e0b"></span> Medium</span>
+        <span class="stat"><span class="stat-dot" style="background:#f97316"></span> High</span>
+        <span class="stat"><span class="stat-dot" style="background:#ef4444"></span> Critical</span>
+      </div>
+    </aside>
+
+    <!-- Detail -->
+    <div class="detail" id="detailPanel">
+      <div class="detail-empty">
+        <div class="detail-empty-icon">📋</div>
+        <div class="detail-empty-text">Select a clause to view details</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit modal -->
+  <div class="modal-overlay" id="editModal" style="display:none">
+    <div class="modal-panel">
+      <div class="modal-title" id="modalTitle">New Clause</div>
+      <div class="modal-field">
+        <label class="modal-label">Title</label>
+        <input class="modal-input" id="fTitle" placeholder="e.g. Standard Limitation of Liability" />
+      </div>
+      <div style="display:flex;gap:10px">
+        <div class="modal-field" style="flex:1">
+          <label class="modal-label">Category</label>
+          <select class="modal-select" id="fCategory">
+            <option value="liability">Liability</option>
+            <option value="indemnity">Indemnity</option>
+            <option value="confidentiality">Confidentiality</option>
+            <option value="payment">Payment</option>
+            <option value="termination">Termination</option>
+            <option value="IP">IP</option>
+            <option value="dispute">Dispute</option>
+            <option value="warranty">Warranty</option>
+            <option value="data_protection">Data Protection</option>
+            <option value="general">General</option>
+          </select>
+        </div>
+        <div class="modal-field" style="flex:1">
+          <label class="modal-label">Risk Level</label>
+          <select class="modal-select" id="fRisk">
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+            <option value="critical">Critical</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-field">
+        <label class="modal-label">Jurisdiction</label>
+        <input class="modal-input" id="fJurisdiction" placeholder="e.g. General, UK, Delaware" />
+      </div>
+      <div class="modal-field">
+        <label class="modal-label">Clause Text</label>
+        <textarea class="modal-textarea" id="fText" placeholder="In no event shall either party…"></textarea>
+      </div>
+      <div class="modal-field">
+        <label class="modal-label">Tags (comma-separated)</label>
+        <input class="modal-input" id="fTags" placeholder="standard, reviewed, negotiable" />
+      </div>
+      <div class="modal-footer">
+        <button class="modal-cancel" id="modalCancel">Cancel</button>
+        <button class="modal-save" id="modalSave">Save Clause</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const BASE = "/api/lex";
+    let allClauses = [];
+    let selectedId = null;
+    let editingId  = null;
+
+    // ── Colour maps ──────────────────────────────────────────────────
+    const RISK_COLORS = {
+      low: "#22c55e", medium: "#f59e0b", high: "#f97316", critical: "#ef4444"
+    };
+    const CAT_COLORS = {
+      liability:"#3b82f6", indemnity:"#8b5cf6", confidentiality:"#06b6d4",
+      payment:"#10b981", termination:"#f43f5e", IP:"#f59e0b",
+      dispute:"#6366f1", warranty:"#14b8a6", data_protection:"#ec4899", general:"#6b7280"
+    };
+    const riskPct = { low:20, medium:45, high:72, critical:100 };
+
+    // ── API helpers ──────────────────────────────────────────────────
+    async function apiFetch(path, opts={}) {
+      const res = await fetch(`${BASE}${path}`, {
+        headers: { "Content-Type": "application/json" },
+        ...opts,
+        body: opts.body ? JSON.stringify(opts.body) : undefined
+      });
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+      return res.json();
+    }
+
+    // ── Toast ────────────────────────────────────────────────────────
+    function showToast(msg, type="success") {
+      const el = document.getElementById("toast");
+      el.textContent = msg;
+      el.className = `toast ${type} show`;
+      setTimeout(() => { el.classList.remove("show"); }, 2800);
+    }
+
+    // ── Badge helpers ────────────────────────────────────────────────
+    function riskBadge(level, small=false) {
+      const color = RISK_COLORS[level] || "#6b7280";
+      return `<span class="badge${small?" badge-sm":""}" style="background:${color}">${level.toUpperCase()}</span>`;
+    }
+    function catBadge(cat, small=false) {
+      const color = CAT_COLORS[cat] || "#6b7280";
+      const label = cat.replace("_"," ").replace(/\b\w/g,c=>c.toUpperCase());
+      return `<span class="badge${small?" badge-sm":""}" style="background:${color}">${label}</span>`;
+    }
+
+    // ── Load clause list ─────────────────────────────────────────────
+    async function loadClauses() {
+      const search   = document.getElementById("searchInput").value.trim();
+      const category = document.getElementById("categoryFilter").value;
+      const riskLevel = document.getElementById("riskFilter").value;
+
+      const params = new URLSearchParams();
+      if (search)    params.set("search", search);
+      if (category)  params.set("category", category);
+      if (riskLevel) params.set("risk_level", riskLevel);
+
+      const qs = params.toString();
+      try {
+        const data = await apiFetch(`/clauses${qs ? "?"+qs : ""}`);
+        allClauses = data.data || data.clauses || (Array.isArray(data) ? data : []);
+        renderList();
+        updateStats();
+      } catch(e) {
+        document.getElementById("clauseList").innerHTML =
+          `<div style="padding:20px;text-align:center;color:#ef4444;font-size:0.83rem;">Failed to load: ${e.message}</div>`;
+      }
+    }
+
+    function renderList() {
+      const list = document.getElementById("clauseList");
+      if (!allClauses.length) {
+        list.innerHTML = `<div style="padding:20px;text-align:center;color:#94a3b8;font-size:0.83rem;">No clauses found</div>`;
+        return;
+      }
+      list.innerHTML = allClauses.map(c => {
+        const stale = c.days_since_review > 365;
+        return `
+          <div class="clause-item${selectedId===c.id?" active":""}" data-id="${c.id}">
+            <div class="ci-top">
+              <span class="ci-title">${c.title}</span>
+              ${riskBadge(c.risk_level, true)}
+            </div>
+            <div class="ci-meta">
+              ${catBadge(c.category, true)}
+              <span>v${c.version}</span>
+              ${stale ? `<span class="ci-review">⚠ Stale</span>` : ""}
+              <span>${c.jurisdiction}</span>
+            </div>
+          </div>`;
+      }).join("");
+
+      list.querySelectorAll(".clause-item").forEach(el => {
+        el.addEventListener("click", () => selectClause(el.dataset.id));
+      });
+    }
+
+    function updateStats() {
+      const counts = { low:0, medium:0, high:0, critical:0 };
+      allClauses.forEach(c => { if(counts[c.risk_level]!==undefined) counts[c.risk_level]++; });
+      const bar = document.getElementById("statsBar");
+      bar.innerHTML = Object.entries(counts).map(([level, n]) =>
+        `<span class="stat"><span class="stat-dot" style="background:${RISK_COLORS[level]}"></span>${n} ${level}</span>`
+      ).join("");
+    }
+
+    // ── Select + show detail ─────────────────────────────────────────
+    async function selectClause(id) {
+      selectedId = id;
+      renderList();
+
+      const panel = document.getElementById("detailPanel");
+      panel.innerHTML = `<div style="padding:40px;display:flex;justify-content:center"><div class="spinner"></div></div>`;
+
+      try {
+        const c = await apiFetch(`/clauses/${id}`);
+        renderDetail(c);
+      } catch(e) {
+        panel.innerHTML = `<div class="detail-empty"><div style="color:#ef4444">${e.message}</div></div>`;
+      }
+    }
+
+    function renderDetail(c) {
+      const panel = document.getElementById("detailPanel");
+      const reviewDate = c.last_reviewed_at
+        ? new Date(c.last_reviewed_at).toLocaleDateString("en-GB", { day:"numeric", month:"short", year:"numeric" })
+        : "Never";
+      const stale = c.days_since_review > 365;
+      const pct = riskPct[c.risk_level] || 50;
+      const versions = (c.versions || []).slice().reverse();
+
+      panel.innerHTML = `
+        <div class="detail-header">
+          <div class="detail-header-top">
+            <div class="detail-icon">📋</div>
+            <div class="detail-header-info">
+              <div class="detail-title" title="${c.title}">${c.title}</div>
+              <div class="detail-badges">
+                ${catBadge(c.category)}
+                ${riskBadge(c.risk_level)}
+              </div>
+            </div>
+          </div>
+          <div class="detail-meta">
+            <span>🌍 ${c.jurisdiction}</span>
+            <span>📌 v${c.version}</span>
+            <span ${stale ? "style='color:#f59e0b;font-weight:600'" : ""}>
+              🗓 ${stale ? "⚠ " : ""}${reviewDate}
+            </span>
+          </div>
+          <div class="detail-header-actions">
+            <button class="btn-edit" id="editBtn">✏️ Edit</button>
+            <button class="btn-outline" id="copyBtn">📋 Copy text</button>
+            <button class="btn-danger" id="deleteBtn">🗑 Delete</button>
+          </div>
+        </div>
+
+        <!-- Risk indicator -->
+        <div class="detail-section">
+          <div class="section-label">Risk Level</div>
+          <div style="display:flex;align-items:center;gap:12px">
+            ${riskBadge(c.risk_level)}
+            <div class="risk-bar" style="flex:1">
+              <div class="risk-fill" style="width:${pct}%;background:${RISK_COLORS[c.risk_level]}"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Clause text -->
+        <div class="detail-section">
+          <div class="section-label">Clause Text</div>
+          <div class="clause-text-box">${c.text}</div>
+        </div>
+
+        <!-- Tags -->
+        ${c.tags && c.tags.length ? `
+        <div class="detail-section">
+          <div class="section-label">Tags</div>
+          <div class="tags-row">
+            ${c.tags.map(t=>`<span class="tag-chip">${t}</span>`).join("")}
+          </div>
+        </div>` : ""}
+
+        <!-- Version history -->
+        ${versions.length ? `
+        <div class="detail-section">
+          <div class="section-label">Version History</div>
+          <div class="version-list">
+            ${versions.map((v, i) => `
+              <div class="version-item">
+                <div class="version-num${i===0?" current":""}">v${v.version}</div>
+                <div class="version-info">
+                  <div>${v.title}</div>
+                  <div class="version-date">${new Date(v.created_at).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})}
+                    ${v.changed_by ? `· <span class="version-by">${v.changed_by}</span>` : ""}
+                  </div>
+                </div>
+                ${i===0?`<span style="font-size:0.72rem;color:#10b981;font-weight:700">CURRENT</span>`:""}
+              </div>
+            `).join("")}
+          </div>
+        </div>` : ""}
+      `;
+
+      document.getElementById("editBtn").addEventListener("click", () => openEditModal(c));
+      document.getElementById("deleteBtn").addEventListener("click", () => deleteClause(c.id));
+      document.getElementById("copyBtn").addEventListener("click", () => {
+        navigator.clipboard.writeText(c.text).then(() => showToast("Copied to clipboard"));
+      });
+    }
+
+    // ── Edit modal ───────────────────────────────────────────────────
+    function openEditModal(c=null) {
+      editingId = c ? c.id : null;
+      document.getElementById("modalTitle").textContent = c ? "Edit Clause" : "New Clause";
+      document.getElementById("fTitle").value       = c?.title       || "";
+      document.getElementById("fCategory").value    = c?.category    || "liability";
+      document.getElementById("fRisk").value        = c?.risk_level  || "medium";
+      document.getElementById("fJurisdiction").value= c?.jurisdiction|| "General";
+      document.getElementById("fText").value        = c?.text        || "";
+      document.getElementById("fTags").value        = (c?.tags||[]).join(", ");
+      document.getElementById("editModal").style.display = "flex";
+    }
+
+    document.getElementById("modalCancel").addEventListener("click", () => {
+      document.getElementById("editModal").style.display = "none";
+    });
+
+    document.getElementById("modalSave").addEventListener("click", async () => {
+      const title       = document.getElementById("fTitle").value.trim();
+      const category    = document.getElementById("fCategory").value;
+      const risk_level  = document.getElementById("fRisk").value;
+      const jurisdiction= document.getElementById("fJurisdiction").value.trim() || "General";
+      const text        = document.getElementById("fText").value.trim();
+      const rawTags     = document.getElementById("fTags").value.trim();
+      const tags        = rawTags ? rawTags.split(",").map(t=>t.trim()).filter(Boolean) : [];
+
+      if (!title || !text) { showToast("Title and text are required", "error"); return; }
+
+      const body = { title, category, risk_level, jurisdiction, text, tags,
+                     last_reviewed_at: new Date().toISOString() };
+      try {
+        if (editingId) {
+          await apiFetch(`/clauses/${editingId}`, { method:"PATCH", body });
+          showToast("Clause updated ✓");
+        } else {
+          await apiFetch("/clauses", { method:"POST", body });
+          showToast("Clause created ✓");
+          selectedId = null;
+        }
+        document.getElementById("editModal").style.display = "none";
+        await loadClauses();
+        if (editingId) await selectClause(editingId);
+      } catch(e) {
+        showToast(`Save failed: ${e.message}`, "error");
+      }
+    });
+
+    // ── Delete ───────────────────────────────────────────────────────
+    async function deleteClause(id) {
+      if (!confirm("Delete this clause? This cannot be undone.")) return;
+      try {
+        await apiFetch(`/clauses/${id}`, { method:"DELETE" });
+        selectedId = null;
+        document.getElementById("detailPanel").innerHTML =
+          `<div class="detail-empty"><div class="detail-empty-icon">📋</div><div class="detail-empty-text">Clause deleted</div></div>`;
+        showToast("Clause deleted");
+        await loadClauses();
+      } catch(e) {
+        showToast(`Delete failed: ${e.message}`, "error");
+      }
+    }
+
+    // ── Wire controls ────────────────────────────────────────────────
+    let currentView = "clauses";
+    let searchTimer = null;
+    document.getElementById("searchInput").addEventListener("input", () => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => {
+        const q = document.getElementById("searchInput").value.trim();
+        if (currentView === "clauses") loadClauses();
+        else if (currentView === "parties") loadParties(q);
+        else if (currentView === "matters") loadMatters(q);
+      }, 300);
+    });
+    document.getElementById("categoryFilter").addEventListener("change", loadClauses);
+    document.getElementById("riskFilter").addEventListener("change", loadClauses);
+    document.getElementById("newBtn").onclick = () => openEditModal(null);
+    document.getElementById("openEditorBtn").addEventListener("click", () => {
+      window.location.href = "/";
+    });
+
+    // ── Parties ──────────────────────────────────────────────────────
+    let allParties = [];
+    let selectedPartyId = null;
+
+    async function loadParties(search = "") {
+      const params = new URLSearchParams({ limit: 50 });
+      if (search) params.set("search", search);
+      const r = await fetch(`/api/lex/parties?${params}`);
+      const d = await r.json();
+      allParties = d.data || d;
+      renderPartyList(allParties);
+    }
+
+    const PARTY_TYPE_COLOR = {
+      company:     { bg:"#eff6ff", color:"#1d4ed8" },
+      individual:  { bg:"#f0fdf4", color:"#15803d" },
+      partnership: { bg:"#fdf4ff", color:"#7e22ce" },
+      government:  { bg:"#fff7ed", color:"#c2410c" },
+    };
+
+    function partyInitials(name) {
+      return name.split(" ").slice(0,2).map(w=>w[0]).join("").toUpperCase();
+    }
+
+    function renderPartyList(parties) {
+      const list = document.getElementById("clauseList");
+      if (!parties.length) {
+        list.innerHTML = `<div class="detail-empty" style="padding:40px 0"><div class="detail-empty-icon">🏢</div><div class="detail-empty-text">No parties found</div></div>`;
+        return;
+      }
+      const tc = PARTY_TYPE_COLOR;
+      list.innerHTML = parties.map(p => {
+        const col = tc[p.type] || tc.company;
+        const initials = partyInitials(p.name);
+        return `
+        <div class="clause-item ${p.id === selectedPartyId ? 'active' : ''}" data-id="${p.id}" onclick="selectParty('${p.id}')">
+          <div class="ci-top">
+            <div style="width:30px;height:30px;border-radius:8px;background:${col.bg};color:${col.color};display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:800;flex-shrink:0">${initials}</div>
+            <span class="ci-title">${p.name}</span>
+          </div>
+          <div class="ci-meta">
+            <span style="background:${col.bg};color:${col.color};padding:1px 7px;border-radius:999px;font-size:0.67rem;font-weight:700">${p.type || "company"}</span>
+            ${p.jurisdiction ? `<span>${p.jurisdiction}</span>` : ""}
+            ${p.signatory_name ? `<span>· ${p.signatory_name}</span>` : ""}
+            ${p.sanctions_cleared_at ? `<span style="color:#16a34a">✓ Cleared</span>` : ""}
+          </div>
+        </div>`;
+      }).join("");
+    }
+
+    window.selectParty = function(id) {
+      selectedPartyId = id;
+      renderPartyList(allParties);
+      const p = allParties.find(x => x.id === id);
+      if (!p) return;
+      const col = PARTY_TYPE_COLOR[p.type] || PARTY_TYPE_COLOR.company;
+      const initials = partyInitials(p.name);
+      const sanctionsHtml = p.sanctions_cleared_at
+        ? `<span class="badge" style="background:#dcfce7;color:#166534">✓ Sanctions cleared ${new Date(p.sanctions_cleared_at).toLocaleDateString("en-GB")}</span>`
+        : `<span class="badge" style="background:#fef9c3;color:#854d0e">⚠ Sanctions not checked</span>`;
+
+      document.getElementById("detailPanel").innerHTML = `
+        <div class="detail-header">
+          <div class="detail-header-top">
+            <div class="detail-icon" style="background:${col.bg};color:${col.color};font-size:1rem;font-weight:800">${initials}</div>
+            <div class="detail-header-info">
+              <div class="detail-title">${p.name}</div>
+              <div class="detail-badges">
+                <span class="badge" style="background:${col.bg};color:${col.color}">${p.type || "company"}</span>
+                ${p.jurisdiction ? `<span class="badge" style="background:#f1f5f9;color:#475569">${p.jurisdiction}</span>` : ""}
+                ${sanctionsHtml}
+              </div>
+            </div>
+          </div>
+          <div class="detail-header-actions">
+            <button class="btn-edit" onclick="editParty('${p.id}')">✏️ Edit</button>
+            <button class="btn-danger" onclick="deleteParty('${p.id}')">🗑 Delete</button>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <div class="section-label">Contact & Registration</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            ${pField("Registration No.", p.registration_number || "—")}
+            ${pField("Email", p.email ? `<a href="mailto:${p.email}" style="color:#6366f1">${p.email}</a>` : "—")}
+            ${pField("Phone", p.phone || "—")}
+            ${pField("Jurisdiction", p.jurisdiction || "—")}
+          </div>
+        </div>
+
+        ${p.signatory_name ? `
+        <div class="detail-section">
+          <div class="section-label">Signatory</div>
+          <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:14px">
+            <div style="width:40px;height:40px;border-radius:50%;background:#e0e7ff;color:#4338ca;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.85rem;flex-shrink:0">
+              ${p.signatory_name.split(" ").slice(0,2).map(w=>w[0]).join("").toUpperCase()}
+            </div>
+            <div>
+              <div style="font-weight:700;font-size:0.9rem">${p.signatory_name}</div>
+              ${p.signatory_title ? `<div style="font-size:0.78rem;color:#94a3b8">${p.signatory_title}</div>` : ""}
+            </div>
+          </div>
+        </div>` : ""}
+
+        <div class="detail-section">
+          <div class="section-label">Record</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            ${pField("Added", new Date(p.created_at).toLocaleDateString("en-GB", {day:"2-digit",month:"short",year:"numeric"}))}
+            ${pField("Last updated", new Date(p.updated_at).toLocaleDateString("en-GB", {day:"2-digit",month:"short",year:"numeric"}))}
+          </div>
+        </div>`;
+    };
+
+    function pField(label, value) {
+      return `<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:11px 14px">
+        <div class="section-label" style="margin-bottom:4px">${label}</div>
+        <div style="font-size:0.85rem;color:#1e293b;font-weight:500">${value}</div>
+      </div>`;
+    }
+
+    window.deleteParty = async function(id) {
+      if (!confirm("Delete this party?")) return;
+      await fetch(`/api/lex/parties/${id}`, { method: "DELETE" });
+      selectedPartyId = null;
+      document.getElementById("detailPanel").innerHTML = `<div class="detail-empty"><div class="detail-empty-icon">🏢</div><div class="detail-empty-text">Select a party to view details</div></div>`;
+      loadParties();
+    };
+
+    window.editParty = function(id) {
+      const p = allParties.find(x => x.id === id);
+      if (!p) return;
+      openPartyModal(p);
+    };
+
+    function openPartyModal(existing = null) {
+      const isEdit = !!existing;
+      const overlay = document.createElement("div");
+      overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1000;display:flex;align-items:center;justify-content:center";
+      overlay.innerHTML = `
+        <div style="background:#fff;border-radius:14px;padding:28px 32px;width:560px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,0.18)">
+          <div style="font-size:1.1rem;font-weight:800;color:#1e293b;margin-bottom:4px">${isEdit ? "✏️ Edit Party" : "🏢 New Party"}</div>
+          <div style="font-size:0.8rem;color:#94a3b8;margin-bottom:20px">Fill in the details below. Only name and type are required.</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            ${modalField("Name *", "pName", existing?.name || "", "text", "Acme Technologies Ltd")}
+            ${modalField("Type", "pType", existing?.type || "company", "select", "", ["company","individual","partnership","government"])}
+            ${modalField("Jurisdiction", "pJurisdiction", existing?.jurisdiction || "", "text", "UK, EU, General…")}
+            ${modalField("Registration No.", "pReg", existing?.registration_number || "", "text", "GB12345678")}
+            ${modalField("Email", "pEmail", existing?.email || "", "email", "legal@company.com")}
+            ${modalField("Phone", "pPhone", existing?.phone || "", "text", "+44 20 1234 5678")}
+            ${modalField("Signatory Name", "pSigName", existing?.signatory_name || "", "text", "Jane Smith")}
+            ${modalField("Signatory Title", "pSigTitle", existing?.signatory_title || "", "text", "General Counsel")}
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:20px">
+            <button id="pCancelBtn" style="padding:8px 16px;border:1px solid #e2e8f0;border-radius:6px;background:#fff;cursor:pointer">Cancel</button>
+            <button id="pSaveBtn" style="padding:8px 18px;border:none;border-radius:6px;background:#6366f1;color:#fff;font-weight:600;cursor:pointer">${isEdit ? "Save changes" : "Create party"}</button>
+          </div>
+        </div>`;
+      document.body.appendChild(overlay);
+      overlay.querySelector("#pCancelBtn").onclick = () => overlay.remove();
+      overlay.querySelector("#pSaveBtn").onclick = async () => {
+        const body = {
+          name:                overlay.querySelector("#pName").value.trim(),
+          type:                overlay.querySelector("#pType").value,
+          jurisdiction:        overlay.querySelector("#pJurisdiction").value.trim() || null,
+          registration_number: overlay.querySelector("#pReg").value.trim() || null,
+          email:               overlay.querySelector("#pEmail").value.trim() || null,
+          phone:               overlay.querySelector("#pPhone").value.trim() || null,
+          signatory_name:      overlay.querySelector("#pSigName").value.trim() || null,
+          signatory_title:     overlay.querySelector("#pSigTitle").value.trim() || null,
+        };
+        if (!body.name) { alert("Name is required"); return; }
+        const url    = isEdit ? `/api/lex/parties/${existing.id}` : "/api/lex/parties";
+        const method = isEdit ? "PATCH" : "POST";
+        const r = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+        if (!r.ok) { alert("Error saving party"); return; }
+        const saved = await r.json();
+        overlay.remove();
+        await loadParties();
+        selectParty(saved.id || existing.id);
+      };
+      overlay.addEventListener("click", e => { if (e.target === overlay) overlay.remove(); });
+    }
+
+    function modalField(label, id, value, type, placeholder, options) {
+      const base = `font-size:0.72rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:5px`;
+      const input = `width:100%;padding:8px 10px;border:1px solid #e2e8f0;border-radius:7px;font-size:0.85rem;color:#1e293b;outline:none;background:#f8fafc`;
+      if (type === "select") {
+        return `<div><label style="${base}">${label}</label>
+          <select id="${id}" style="${input};cursor:pointer">
+            ${options.map(o => `<option value="${o}" ${o===value?"selected":""}>${o.charAt(0).toUpperCase()+o.slice(1)}</option>`).join("")}
+          </select></div>`;
+      }
+      return `<div><label style="${base}">${label}</label>
+        <input id="${id}" type="${type}" value="${value}" placeholder="${placeholder}"
+          style="${input}"/></div>`;
+    }
+
+    // Nav tabs
+    document.querySelectorAll(".nav-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".nav-btn").forEach(b=>b.classList.remove("active"));
+        btn.classList.add("active");
+        const view = btn.dataset.view;
+        const clauseFilters = document.getElementById("clauseFilters");
+        if (view === "clauses") {
+          currentView = "clauses";
+          clauseFilters.style.display = "";
+          document.getElementById("newBtn").textContent = "+ New Clause";
+          document.getElementById("newBtn").onclick = () => openEditModal(null);
+          document.getElementById("searchInput").placeholder = "Search clauses…";
+          document.getElementById("searchInput").value = "";
+          loadClauses();
+        } else if (view === "parties") {
+          currentView = "parties";
+          clauseFilters.style.display = "none";
+          document.getElementById("newBtn").textContent = "+ New Party";
+          document.getElementById("newBtn").onclick = () => openPartyModal();
+          document.getElementById("searchInput").placeholder = "Search parties…";
+          document.getElementById("searchInput").value = "";
+          document.getElementById("detailPanel").innerHTML = `<div class="detail-empty"><div class="detail-empty-icon">🏢</div><div class="detail-empty-text">Select a party to view details</div></div>`;
+          loadParties();
+        } else {
+          currentView = "matters";
+          clauseFilters.style.display = "none";
+          document.getElementById("newBtn").textContent = "+ New Matter";
+          document.getElementById("newBtn").onclick = () => openMatterModal();
+          document.getElementById("searchInput").placeholder = "Search matters…";
+          document.getElementById("searchInput").value = "";
+          document.getElementById("detailPanel").innerHTML = `<div class="detail-empty"><div class="detail-empty-icon">📁</div><div class="detail-empty-text">Select a matter to view details</div></div>`;
+          loadMatters();
+        }
+      });
+    });
+
+    // ── Matters ──────────────────────────────────────────────────────
+    let allMatters = [];
+    let selectedMatterId = null;
+
+    const MATTER_STATUS_COLOR = {
+      open:           { bg:"#eff6ff", color:"#1d4ed8" },
+      in_negotiation: { bg:"#fff7ed", color:"#c2410c" },
+      signed:         { bg:"#f0fdf4", color:"#15803d" },
+      closed:         { bg:"#f1f5f9", color:"#475569" },
+      archived:       { bg:"#f1f5f9", color:"#94a3b8" },
+      draft:          { bg:"#fdf4ff", color:"#7e22ce" },
+      review:         { bg:"#fefce8", color:"#a16207" },
+      negotiation:    { bg:"#fff7ed", color:"#c2410c" },
+      executed:       { bg:"#f0fdf4", color:"#15803d" },
+      terminated:     { bg:"#fef2f2", color:"#dc2626" },
+    };
+
+    const MATTER_TYPE_ICON = {
+      contract:"📄", nda:"🤝", msa:"📋", sow:"📐",
+      amendment:"✏️", license:"🔑", employment:"👤",
+      dispute:"⚖️", regulatory:"🏛", advisory:"💡", other:"📁"
+    };
+
+    function matterInitials(title) {
+      return title.split(/\s+/).filter(w => /^[A-Za-z]/.test(w)).slice(0,2).map(w=>w[0]).join("").toUpperCase() || "M";
+    }
+
+    async function loadMatters(search = "") {
+      const params = new URLSearchParams({ limit: 50 });
+      if (search) params.set("search", search);
+      const r = await fetch(`/api/lex/matters?${params}`);
+      const d = await r.json();
+      allMatters = d.data || d;
+      renderMatterList(allMatters);
+    }
+
+    function renderMatterList(matters) {
+      const list = document.getElementById("clauseList");
+      if (!matters.length) {
+        list.innerHTML = `<div class="detail-empty" style="padding:40px 0"><div class="detail-empty-icon">📁</div><div class="detail-empty-text">No matters found</div></div>`;
+        return;
+      }
+      list.innerHTML = matters.map(m => {
+        const sc = MATTER_STATUS_COLOR[m.status] || MATTER_STATUS_COLOR.open;
+        const icon = MATTER_TYPE_ICON[m.type] || "📁";
+        const deadlineStr = (m.expiry_date||m.deadline) ? new Date(m.expiry_date||m.deadline).toLocaleDateString("en-GB", {day:"2-digit",month:"short",year:"numeric"}) : null;
+        const overdue = (m.expiry_date||m.deadline) && new Date(m.expiry_date||m.deadline) < new Date();
+        return `
+        <div class="clause-item ${m.id === selectedMatterId ? 'active' : ''}" data-id="${m.id}" onclick="selectMatter('${m.id}')">
+          <div class="ci-top">
+            <div style="width:30px;height:30px;border-radius:8px;background:${sc.bg};color:${sc.color};display:flex;align-items:center;justify-content:center;font-size:0.72rem;font-weight:800;flex-shrink:0">${matterInitials(m.title)}</div>
+            <span class="ci-title">${m.title}</span>
+          </div>
+          <div class="ci-meta">
+            <span style="background:${sc.bg};color:${sc.color};padding:1px 7px;border-radius:999px;font-size:0.67rem;font-weight:700">${m.status.replace("_"," ")}</span>
+            <span>${icon} ${m.type}</span>
+            ${m.party_count > 0 ? `<span>· ${m.party_count} ${m.party_count===1?"party":"parties"}</span>` : ""}
+            ${deadlineStr ? `<span style="color:${overdue?"#ef4444":"#94a3b8"}">· ${overdue?"⚠ ":""}${deadlineStr}</span>` : ""}
+          </div>
+        </div>`;
+      }).join("");
+    }
+
+    window.selectMatter = async function(id) {
+      selectedMatterId = id;
+      renderMatterList(allMatters);
+      // Fetch full detail (includes parties)
+      const r = await fetch(`/api/lex/matters/${id}`);
+      const m = await r.json();
+      if (!m || m.error) return;
+      const sc   = MATTER_STATUS_COLOR[m.status] || MATTER_STATUS_COLOR.open;
+      const icon = MATTER_TYPE_ICON[m.type] || "📁";
+      const initials = matterInitials(m.title);
+      const deadlineStr = m.deadline ? new Date(m.deadline).toLocaleDateString("en-GB", {day:"2-digit",month:"short",year:"numeric"}) : null;
+      const overdue = m.deadline && new Date(m.deadline) < new Date();
+
+      // Normalise: API may return parties array OR client_party_name/counterparty_name columns
+      if (!m.parties || !m.parties.length) {
+        m.parties = [];
+        if (m.client_party_name) m.parties.push({ name: m.client_party_name, role: "client" });
+        if (m.counterparty_name) m.parties.push({ name: m.counterparty_name, role: "counterparty" });
+      }
+      const partiesHtml = (m.parties && m.parties.length) ? m.parties.map(p => `
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;font-size:0.83rem">
+          <div style="width:28px;height:28px;border-radius:50%;background:#e0e7ff;color:#4338ca;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.7rem;flex-shrink:0">
+            ${p.name.split(" ").slice(0,2).map(w=>w[0]).join("").toUpperCase()}
+          </div>
+          <div style="flex:1"><span style="font-weight:600">${p.name}</span></div>
+          <span style="background:#f1f5f9;color:#475569;padding:2px 8px;border-radius:999px;font-size:0.68rem;font-weight:700">${p.role}</span>
+        </div>`).join("") :
+        `<div style="color:#94a3b8;font-size:0.82rem;padding:8px 0">No parties linked yet</div>`;
+
+      document.getElementById("detailPanel").innerHTML = `
+        <div class="detail-header">
+          <div class="detail-header-top">
+            <div class="detail-icon" style="background:${sc.bg};color:${sc.color};font-size:1rem;font-weight:800">${initials}</div>
+            <div class="detail-header-info">
+              <div class="detail-title">${m.title}</div>
+              <div class="detail-badges">
+                <span class="badge" style="background:${sc.bg};color:${sc.color}">${m.status.replace("_"," ")}</span>
+                <span class="badge" style="background:#f1f5f9;color:#475569">${icon} ${m.type}</span>
+                ${deadlineStr ? `<span class="badge" style="background:${overdue?"#fee2e2":"#f1f5f9"};color:${overdue?"#dc2626":"#475569"}">📅 ${deadlineStr}</span>` : ""}
+              </div>
+            </div>
+          </div>
+          <div class="detail-header-actions">
+            <button class="btn-edit" onclick="editMatter('${m.id}')">✏️ Edit</button>
+            <button class="btn-danger" onclick="deleteMatter('${m.id}')">🗑 Delete</button>
+          </div>
+        </div>
+
+        ${(m.notes||m.description) ? `
+        <div class="detail-section">
+          <div class="section-label">Notes</div>
+          <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px 16px;font-size:0.88rem;line-height:1.6;color:#334155">${m.notes||m.description}</div>
+        </div>` : ""}
+
+        <div class="detail-section">
+          <div class="section-label">Details</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            ${pField("Type", `${icon} ${m.type}`)}
+            ${pField("Status", m.status.replace("_"," "))}
+            ${pField("Expiry date", deadlineStr || "—")}
+            ${pField("Opened", new Date(m.created_at).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"}))}
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <div class="section-label">Parties (${(m.parties||[]).length})</div>
+          <div style="display:flex;flex-direction:column;gap:8px">${partiesHtml}</div>
+        </div>`;
+    };
+
+    window.editMatter = function(id) {
+      const m = allMatters.find(x => x.id === id);
+      if (m) openMatterModal(m);
+    };
+
+    window.deleteMatter = async function(id) {
+      if (!confirm("Delete this matter?")) return;
+      await fetch(`/api/lex/matters/${id}`, { method: "DELETE" });
+      selectedMatterId = null;
+      document.getElementById("detailPanel").innerHTML = `<div class="detail-empty"><div class="detail-empty-icon">📁</div><div class="detail-empty-text">Select a matter to view details</div></div>`;
+      loadMatters();
+    };
+
+    function openMatterModal(existing = null) {
+      const isEdit = !!existing;
+      const overlay = document.createElement("div");
+      overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1000;display:flex;align-items:center;justify-content:center";
+      const typeOpts = ["contract","nda","msa","sow","amendment","license","employment","dispute","regulatory","advisory","other"];
+      const statusOpts = ["draft","review","negotiation","executed","terminated","archived"];
+      overlay.innerHTML = `
+        <div style="background:#fff;border-radius:14px;padding:28px 32px;width:560px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,0.18)">
+          <div style="font-size:1.1rem;font-weight:800;color:#1e293b;margin-bottom:4px">${isEdit ? "✏️ Edit Matter" : "📁 New Matter"}</div>
+          <div style="font-size:0.8rem;color:#94a3b8;margin-bottom:20px">Fill in the details below. Title is required.</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div style="grid-column:1/-1">${modalField("Title *", "mTitle", existing?.title || "", "text", "SaaS Agreement — Acme Technologies")}</div>
+            ${modalField("Type", "mType", existing?.type || "contract", "select", "", typeOpts)}
+            ${modalField("Status", "mStatus", existing?.status || "draft", "select", "", statusOpts)}
+            <div style="grid-column:1/-1"><label style="font-size:0.72rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:5px">Description</label>
+              <textarea id="mDesc" rows="3" placeholder="Describe the matter…" style="width:100%;padding:8px 10px;border:1px solid #e2e8f0;border-radius:7px;font-size:0.85rem;color:#1e293b;resize:vertical;font-family:inherit">${existing?.notes || existing?.description || ""}</textarea></div>
+            ${modalField("Expiry date", "mDeadline", (existing?.expiry_date||existing?.deadline) ? (existing.expiry_date||existing.deadline).slice(0,10) : "", "date", "")}
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:20px">
+            <button id="mCancelBtn" style="padding:8px 16px;border:1px solid #e2e8f0;border-radius:6px;background:#fff;cursor:pointer">Cancel</button>
+            <button id="mSaveBtn" style="padding:8px 18px;border:none;border-radius:6px;background:#6366f1;color:#fff;font-weight:600;cursor:pointer">${isEdit ? "Save changes" : "Create matter"}</button>
+          </div>
+        </div>`;
+      document.body.appendChild(overlay);
+      overlay.querySelector("#mCancelBtn").onclick = () => overlay.remove();
+      overlay.querySelector("#mSaveBtn").onclick = async () => {
+        const body = {
+          title:        overlay.querySelector("#mTitle").value.trim(),
+          type:         overlay.querySelector("#mType").value,
+          status:       overlay.querySelector("#mStatus").value,
+          notes:        overlay.querySelector("#mDesc").value.trim() || null,
+          expiry_date:  overlay.querySelector("#mDeadline").value || null,
+        };
+        if (!body.title) { alert("Title is required"); return; }
+        const url    = isEdit ? `/api/lex/matters/${existing.id}` : "/api/lex/matters";
+        const method = isEdit ? "PATCH" : "POST";
+        const r = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+        if (!r.ok) { const e = await r.json(); alert("Error: " + (e.error||"unknown")); return; }
+        const saved = await r.json();
+        overlay.remove();
+        await loadMatters();
+        selectMatter(saved.id || existing.id);
+      };
+      overlay.addEventListener("click", e => { if (e.target === overlay) overlay.remove(); });
+    }
+
+    // ── Boot ─────────────────────────────────────────────────────────
+    loadClauses();
+  </script>
+</body>
+</html>
