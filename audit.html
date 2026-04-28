@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Audit Log</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f4f4f5;
+      color: #18181b;
+      min-height: 100dvh;
+    }
+
+    /* ── Nav ── */
+    .nav {
+      position: sticky; top: 0; z-index: 20;
+      background: #fff; border-bottom: 1px solid #e4e4e7;
+      padding: 0 24px; height: 56px;
+      display: flex; align-items: center; gap: 14px;
+    }
+    .nav-logo {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: #18181b;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .nav-title { font-size: 15px; font-weight: 700; flex: 1; }
+    .nav-back {
+      display: flex; align-items: center; gap: 4px;
+      color: #6b7280; text-decoration: none; font-size: 13px;
+      padding: 5px 8px; border-radius: 6px; transition: background .15s;
+    }
+    .nav-back:hover { background: #f4f4f5; color: #18181b; }
+    .nav-clear-btn {
+      font-size: 12px; font-weight: 600; cursor: pointer;
+      border: 1.5px solid #fecaca; border-radius: 6px;
+      padding: 5px 12px; background: #fff; color: #dc2626;
+      transition: background .12s;
+    }
+    .nav-clear-btn:hover { background: #fff7f7; }
+
+    /* ── Page ── */
+    .page { max-width: 1200px; margin: 0 auto; padding: 24px; }
+
+    /* ── Stats row ── */
+    .stats-row { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+    .stat-pill {
+      background: #fff; border: 1px solid #e4e4e7; border-radius: 8px;
+      padding: 8px 16px; font-size: 12px; color: #52525b;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .stat-pill strong { color: #18181b; font-size: 15px; }
+    .stat-pill.ok     strong { color: #16a34a; }
+    .stat-pill.err    strong { color: #dc2626; }
+    .stat-pill.slow   strong { color: #d97706; }
+
+    /* ── Filters ── */
+    .filter-bar {
+      background: #fff; border: 1.5px solid #e4e4e7; border-radius: 10px;
+      padding: 14px 16px; margin-bottom: 16px;
+      display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+    }
+    .filter-bar label { font-size: 11px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: .05em; }
+    .filter-group { display: flex; flex-direction: column; gap: 4px; }
+    .filter-input, .filter-select {
+      font-size: 12.5px; font-family: inherit;
+      border: 1.5px solid #e4e4e7; border-radius: 6px;
+      padding: 5px 9px; outline: none; background: #fff;
+      transition: border-color .15s;
+    }
+    .filter-input:focus, .filter-select:focus { border-color: #6366f1; }
+    .filter-input { width: 180px; }
+    .filter-input.sm { width: 90px; }
+    .filter-btn {
+      align-self: flex-end; font-size: 12.5px; font-weight: 600;
+      background: #18181b; color: #fff; border: none; border-radius: 6px;
+      padding: 7px 16px; cursor: pointer; transition: background .12s;
+    }
+    .filter-btn:hover { background: #3f3f46; }
+    .filter-reset {
+      align-self: flex-end; font-size: 12px; color: #6b7280;
+      background: none; border: none; cursor: pointer; padding: 7px 4px;
+      text-decoration: underline;
+    }
+    .filter-reset:hover { color: #18181b; }
+
+    /* ── Method pills ── */
+    .method-filter { display: flex; gap: 4px; align-self: flex-end; flex-wrap: wrap; }
+    .method-pill {
+      font-size: 11px; font-weight: 700; border-radius: 4px;
+      padding: 4px 9px; cursor: pointer; border: 1.5px solid transparent;
+      font-family: ui-monospace, monospace; transition: all .12s; opacity: .45;
+    }
+    .method-pill.active { opacity: 1; }
+    .method-pill.GET    { background: #dbeafe; color: #1d4ed8; border-color: #93c5fd; }
+    .method-pill.POST   { background: #dcfce7; color: #15803d; border-color: #86efac; }
+    .method-pill.PUT    { background: #fef9c3; color: #854d0e; border-color: #fde047; }
+    .method-pill.DELETE { background: #fee2e2; color: #dc2626; border-color: #fca5a5; }
+    .method-pill.PATCH  { background: #fdf4ff; color: #7e22ce; border-color: #d8b4fe; }
+
+    /* ── Table ── */
+    .table-wrap {
+      background: #fff; border: 1.5px solid #e4e4e7;
+      border-radius: 12px; overflow-x: auto;
+    }
+    .log-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    .log-table thead tr { background: #f9f9fb; border-bottom: 1px solid #e4e4e7; }
+    .log-table th {
+      text-align: left; padding: 10px 14px;
+      font-size: 10.5px; font-weight: 700; letter-spacing: .06em;
+      text-transform: uppercase; color: #9ca3af; white-space: nowrap;
+    }
+    .log-table td { padding: 9px 14px; border-bottom: 1px solid #f4f4f5; vertical-align: middle; }
+    .log-table tbody tr:last-child td { border-bottom: none; }
+    .log-table tbody tr:hover td { background: #fafafa; }
+
+    /* Method badge */
+    .badge-method {
+      display: inline-block; font-size: 10.5px; font-weight: 800;
+      border-radius: 4px; padding: 2px 7px;
+      font-family: ui-monospace, monospace; white-space: nowrap;
+    }
+    .badge-method.GET    { background: #dbeafe; color: #1d4ed8; }
+    .badge-method.POST   { background: #dcfce7; color: #15803d; }
+    .badge-method.PUT    { background: #fef9c3; color: #854d0e; }
+    .badge-method.DELETE { background: #fee2e2; color: #dc2626; }
+    .badge-method.PATCH  { background: #fdf4ff; color: #7e22ce; }
+
+    /* Status badge */
+    .badge-status {
+      display: inline-block; font-size: 11px; font-weight: 700;
+      border-radius: 4px; padding: 2px 7px;
+      font-family: ui-monospace, monospace;
+    }
+    .badge-status.ok   { background: #dcfce7; color: #15803d; }
+    .badge-status.warn { background: #fef9c3; color: #854d0e; }
+    .badge-status.err  { background: #fee2e2; color: #dc2626; }
+
+    /* Path */
+    .path-cell { font-family: ui-monospace, monospace; color: #374151; }
+    .path-cell .path-qs { color: #9ca3af; }
+
+    /* Duration */
+    .dur { font-family: ui-monospace, monospace; }
+    .dur.fast { color: #16a34a; }
+    .dur.ok   { color: #374151; }
+    .dur.slow { color: #d97706; font-weight: 600; }
+    .dur.very-slow { color: #dc2626; font-weight: 700; }
+
+    /* Timestamp */
+    .ts-cell { color: #6b7280; white-space: nowrap; font-size: 11.5px; }
+
+    /* IP */
+    .ip-cell { color: #9ca3af; font-family: ui-monospace, monospace; font-size: 11.5px; }
+
+    /* ── Pagination ── */
+    .pagination {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px; border-top: 1px solid #f4f4f5;
+      font-size: 12.5px; color: #6b7280; flex-wrap: wrap; gap: 8px;
+    }
+    .page-btns { display: flex; gap: 6px; }
+    .page-btn {
+      border: 1.5px solid #e4e4e7; border-radius: 6px;
+      background: #fff; padding: 4px 12px; font-size: 12px;
+      cursor: pointer; color: #374151; transition: background .12s;
+    }
+    .page-btn:hover:not(:disabled) { background: #f4f4f5; }
+    .page-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+    /* ── Empty / loading ── */
+    .empty-state {
+      text-align: center; padding: 60px 24px; color: #9ca3af;
+    }
+    .empty-state strong { display: block; font-size: 14px; color: #52525b; margin-bottom: 6px; }
+    .loading-row td { text-align: center; padding: 40px; color: #9ca3af; }
+
+    /* ── Live indicator ── */
+    .live-dot {
+      width: 8px; height: 8px; border-radius: 50%; background: #22c55e;
+      display: inline-block; margin-right: 4px;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%,100% { opacity: 1; } 50% { opacity: .3; }
+    }
+    .live-label { font-size: 11px; color: #16a34a; font-weight: 600; }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-logo">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path d="M3 4h10M3 8h7M3 12h5" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
+    </svg>
+  </div>
+  <div class="nav-title">
+    Audit Log
+    <span style="font-size:12px;font-weight:400;color:#9ca3af;margin-left:8px">API access history</span>
+  </div>
+  <span class="live-dot"></span><span class="live-label">Live</span>
+  <button class="nav-clear-btn" id="btnClear">🗑 Clear all</button>
+  <a class="nav-back" href="/docs.html">
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+      <path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    Docs
+  </a>
+</nav>
+
+<div class="page">
+
+  <!-- Stats -->
+  <div class="stats-row" id="statsRow"></div>
+
+  <!-- Filters -->
+  <div class="filter-bar">
+    <div class="filter-group">
+      <label>Path contains</label>
+      <input class="filter-input" id="fPath" placeholder="/api/docs" type="text"/>
+    </div>
+    <div class="filter-group">
+      <label>Status</label>
+      <input class="filter-input sm" id="fStatus" placeholder="e.g. 500" type="number"/>
+    </div>
+    <div class="filter-group">
+      <label>From</label>
+      <input class="filter-input sm" id="fFrom" type="date"/>
+    </div>
+    <div class="filter-group">
+      <label>To</label>
+      <input class="filter-input sm" id="fTo" type="date"/>
+    </div>
+    <div class="filter-group">
+      <label>Method</label>
+      <div class="method-filter" id="methodFilter">
+        <span class="method-pill GET active"  data-m="GET">GET</span>
+        <span class="method-pill POST active" data-m="POST">POST</span>
+        <span class="method-pill PUT active"  data-m="PUT">PUT</span>
+        <span class="method-pill DELETE active" data-m="DELETE">DELETE</span>
+        <span class="method-pill PATCH active"  data-m="PATCH">PATCH</span>
+      </div>
+    </div>
+    <button class="filter-btn" id="btnApply">Apply</button>
+    <button class="filter-reset" id="btnReset">Reset</button>
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrap">
+    <table class="log-table">
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>Method</th>
+          <th>Path</th>
+          <th>Status</th>
+          <th>Duration</th>
+          <th>IP</th>
+        </tr>
+      </thead>
+      <tbody id="logBody"></tbody>
+    </table>
+    <div class="pagination" id="pagination"></div>
+  </div>
+
+</div>
+
+<script>
+// ── State ─────────────────────────────────────────────────────────────────────
+const LIMIT = 50;
+let _offset  = 0;
+let _total   = 0;
+let _filters = {};
+let _activeMethods = new Set(["GET","POST","PUT","DELETE","PATCH"]);
+let _liveTimer = null;
+
+// ── API ───────────────────────────────────────────────────────────────────────
+async function fetchLogs() {
+  const params = new URLSearchParams({ limit: LIMIT, offset: _offset });
+  if (_filters.path)   params.set("path",   _filters.path);
+  if (_filters.status) params.set("status", _filters.status);
+  if (_filters.from)   params.set("from",   _filters.from);
+  if (_filters.to)     params.set("to",     _filters.to);
+  if (_filters.method) params.set("method", _filters.method);
+
+  const res = await fetch(`/api/audit-log?${params}`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+(async () => {
+  await load();
+  wireFilters();
+  wireClear();
+  startLive();
+})();
+
+async function load() {
+  setLoading(true);
+  try {
+    const { logs, total } = await fetchLogs();
+    _total = total;
+    renderStats(logs);
+    renderTable(logs);
+    renderPagination();
+  } catch (e) {
+    document.getElementById("logBody").innerHTML =
+      `<tr><td colspan="6" style="text-align:center;padding:40px;color:#dc2626">
+        Could not load audit log: ${e.message}</td></tr>`;
+  }
+  setLoading(false);
+}
+
+// ── Render stats ──────────────────────────────────────────────────────────────
+async function renderStats(logs) {
+  // Fetch unfiltered totals for stats
+  const res = await fetch(`/api/audit-log?limit=500&offset=0`).then(r => r.json()).catch(() => ({ logs: [] }));
+  const all = res.logs;
+
+  const total   = res.total || 0;
+  const errors  = all.filter(l => l.status >= 400).length;
+  const slow    = all.filter(l => l.duration_ms > 500).length;
+  const avgDur  = all.length ? Math.round(all.reduce((s,l) => s + (l.duration_ms||0), 0) / all.length) : 0;
+  const methods = {};
+  all.forEach(l => { methods[l.method] = (methods[l.method] || 0) + 1; });
+
+  document.getElementById("statsRow").innerHTML = `
+    <div class="stat-pill"><strong>${total}</strong> total calls</div>
+    <div class="stat-pill ok"><strong>${total - errors}</strong> successful</div>
+    ${errors ? `<div class="stat-pill err"><strong>${errors}</strong> errors</div>` : ""}
+    ${slow   ? `<div class="stat-pill slow"><strong>${slow}</strong> slow (&gt;500ms)</div>` : ""}
+    <div class="stat-pill"><strong>${avgDur}ms</strong> avg response</div>
+    ${Object.entries(methods).map(([m,n]) =>
+      `<div class="stat-pill"><strong>${n}</strong> ${m}</div>`
+    ).join("")}
+  `;
+}
+
+// ── Render table ──────────────────────────────────────────────────────────────
+function renderTable(logs) {
+  const tbody = document.getElementById("logBody");
+
+  if (!logs.length) {
+    tbody.innerHTML = `
+      <tr><td colspan="6">
+        <div class="empty-state">
+          <strong>No log entries</strong>
+          ${Object.keys(_filters).length ? "Try adjusting your filters." : "API calls will appear here automatically."}
+        </div>
+      </td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = "";
+  logs.forEach(log => {
+    const tr = document.createElement("tr");
+
+    const statusClass = log.status < 300 ? "ok" : log.status < 500 ? "warn" : "err";
+    const durClass    = log.duration_ms < 50 ? "fast"
+                      : log.duration_ms < 200 ? "ok"
+                      : log.duration_ms < 500 ? "slow" : "very-slow";
+
+    const ts  = new Date(log.ts);
+    const tsStr = ts.toLocaleTimeString(undefined, { hour:"2-digit", minute:"2-digit", second:"2-digit" });
+    const dateStr = ts.toLocaleDateString(undefined, { month:"short", day:"numeric" });
+    const isToday = ts.toDateString() === new Date().toDateString();
+
+    // Split path from query string for cleaner display
+    const [pathOnly, qs] = (log.path || "").split("?");
+
+    tr.innerHTML = `
+      <td class="ts-cell">${isToday ? tsStr : dateStr + " " + tsStr}</td>
+      <td><span class="badge-method ${log.method}">${log.method}</span></td>
+      <td class="path-cell">${escHtml(pathOnly)}${qs ? `<span class="path-qs">?${escHtml(qs)}</span>` : ""}</td>
+      <td><span class="badge-status ${statusClass}">${log.status || "—"}</span></td>
+      <td><span class="dur ${durClass}">${log.duration_ms != null ? log.duration_ms + "ms" : "—"}</span></td>
+      <td class="ip-cell">${escHtml(log.ip || "—")}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// ── Pagination ────────────────────────────────────────────────────────────────
+function renderPagination() {
+  const el  = document.getElementById("pagination");
+  const page = Math.floor(_offset / LIMIT) + 1;
+  const pages = Math.max(1, Math.ceil(_total / LIMIT));
+
+  el.innerHTML = `
+    <span>${_total} entries — page ${page} of ${pages}</span>
+    <div class="page-btns">
+      <button class="page-btn" id="btnPrev" ${_offset === 0 ? "disabled" : ""}>← Prev</button>
+      <button class="page-btn" id="btnNext" ${_offset + LIMIT >= _total ? "disabled" : ""}>Next →</button>
+    </div>`;
+
+  document.getElementById("btnPrev")?.addEventListener("click", () => { _offset -= LIMIT; load(); });
+  document.getElementById("btnNext")?.addEventListener("click", () => { _offset += LIMIT; load(); });
+}
+
+// ── Filters ───────────────────────────────────────────────────────────────────
+function wireFilters() {
+  document.getElementById("btnApply").addEventListener("click", applyFilters);
+  document.getElementById("btnReset").addEventListener("click", resetFilters);
+
+  // Enter key on inputs
+  ["fPath","fStatus","fFrom","fTo"].forEach(id => {
+    document.getElementById(id).addEventListener("keydown", e => {
+      if (e.key === "Enter") applyFilters();
+    });
+  });
+
+  // Method pills toggle
+  document.querySelectorAll(".method-pill").forEach(pill => {
+    pill.addEventListener("click", () => {
+      const m = pill.dataset.m;
+      if (_activeMethods.has(m)) {
+        if (_activeMethods.size === 1) return; // keep at least one
+        _activeMethods.delete(m);
+        pill.classList.remove("active");
+      } else {
+        _activeMethods.add(m);
+        pill.classList.add("active");
+      }
+    });
+  });
+}
+
+function applyFilters() {
+  _filters = {};
+  const path   = document.getElementById("fPath").value.trim();
+  const status = document.getElementById("fStatus").value.trim();
+  const from   = document.getElementById("fFrom").value;
+  const to     = document.getElementById("fTo").value;
+
+  if (path)   _filters.path   = path;
+  if (status) _filters.status = status;
+  if (from)   _filters.from   = from;
+  if (to)     _filters.to     = to;
+
+  // Method filter — only set if not all selected
+  if (_activeMethods.size === 1) {
+    _filters.method = [..._activeMethods][0];
+  }
+
+  _offset = 0;
+  load();
+}
+
+function resetFilters() {
+  document.getElementById("fPath").value   = "";
+  document.getElementById("fStatus").value = "";
+  document.getElementById("fFrom").value   = "";
+  document.getElementById("fTo").value     = "";
+  _activeMethods = new Set(["GET","POST","PUT","DELETE","PATCH"]);
+  document.querySelectorAll(".method-pill").forEach(p => p.classList.add("active"));
+  _filters = {};
+  _offset  = 0;
+  load();
+}
+
+// ── Clear all ─────────────────────────────────────────────────────────────────
+function wireClear() {
+  document.getElementById("btnClear").addEventListener("click", async () => {
+    if (!confirm("Clear all audit log entries? This cannot be undone.")) return;
+    await fetch("/api/audit-log", { method: "DELETE" });
+    _offset = 0;
+    load();
+  });
+}
+
+// ── Auto-refresh every 10s ────────────────────────────────────────────────────
+function startLive() {
+  _liveTimer = setInterval(() => {
+    if (_offset === 0) load(); // only auto-refresh on page 1
+  }, 10000);
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function setLoading(on) {
+  if (on && !document.getElementById("logBody").querySelector("tr")) {
+    document.getElementById("logBody").innerHTML =
+      `<tr class="loading-row"><td colspan="6">Loading…</td></tr>`;
+  }
+}
+
+function escHtml(s) {
+  return String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+</script>
+</body>
+</html>

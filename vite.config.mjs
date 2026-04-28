@@ -14,6 +14,7 @@ export default defineConfig({
         connectors:   resolve(__dirname, "connectors.html"),
         extensions:   resolve(__dirname, "extensions.html"),
         engagement:   resolve(__dirname, "engagement.html"),
+        audit:        resolve(__dirname, "audit.html"),
       },
     },
   },

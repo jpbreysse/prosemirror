@@ -274,6 +274,7 @@ function renderSidebar() {
     <div class="docs-sidebar-footer">
       <a class="docs-sidebar-footer-link" href="/extensions.html">Extensions</a>
       <a class="docs-sidebar-footer-link" href="/connectors.html">Connectors</a>
+      <a class="docs-sidebar-footer-link" href="/audit.html">Audit Log</a>
     </div>
   `;
 
