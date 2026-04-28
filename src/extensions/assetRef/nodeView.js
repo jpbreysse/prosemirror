@@ -11,7 +11,10 @@
  * picker to insert a new ref or delete + re-insert to change it.
  */
 
-const REGISTRY_BASE = "http://localhost:5177";
+// Base URL for deep-links into the Asset Registry UI.
+// Falls back to localhost:5177 for local dev; set ASSET_REGISTRY_BASE_URL
+// in server env and expose it via /api/connectors if needed.
+const REGISTRY_BASE = window.__ASSET_REGISTRY_BASE__ || "http://localhost:5177";
 
 export class AssetRefNodeView {
   constructor(node, view, getPos) {

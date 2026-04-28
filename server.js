@@ -102,18 +102,20 @@ async function initDb() {
       created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
     )
   `);
-  // Seed the two existing hardcoded connectors if not already present
+  // Seed built-in connectors if not already present
   await pool.query(`
     INSERT INTO pm_connectors (name, label, base_url, auth_type, auth_header, auth_value, path_prefix)
     VALUES
-      ('crm', 'CRM', $1, 'api_key', 'X-API-Key', $2, '/api'),
-      ('lex', 'LexAPI', $3, 'api_key', 'X-API-Key', $4, '/api')
+      ('crm',            'CRM',            $1, 'api_key', 'X-API-Key', $2, '/api'),
+      ('lex',            'LexAPI',         $3, 'api_key', 'X-API-Key', $4, '/api'),
+      ('asset-registry', 'Asset Registry', $5, 'none',    '',          '',  '/api')
     ON CONFLICT (name) DO NOTHING
   `, [
-    process.env.CRM_BASE_URL || 'http://localhost:3002',
-    process.env.CRM_API_KEY  || 'customer-api-dev-key',
-    process.env.LEX_BASE_URL || 'http://localhost:3003',
-    process.env.LEX_API_KEY  || 'lex-api-dev-key',
+    process.env.CRM_BASE_URL            || 'http://localhost:3002',
+    process.env.CRM_API_KEY             || 'customer-api-dev-key',
+    process.env.LEX_BASE_URL            || 'http://localhost:3003',
+    process.env.LEX_API_KEY             || 'lex-api-dev-key',
+    process.env.ASSET_REGISTRY_BASE_URL || 'http://localhost:5177',
   ]);
   // Extension toggle config — one row per extension key, default enabled
   await pool.query(`
@@ -1126,24 +1128,11 @@ app.get("/api/query/critical-machines", async (req, res) => {
   }
 });
 
-// ── Asset Registry proxy ──────────────────────────────────────────────────────
-
-const ASSET_REGISTRY_URL = process.env.ASSET_REGISTRY_URL || "http://localhost:5177";
-
-// GET /api/asset-registry/search?q=pump&limit=20
-// Proxies to the external Asset Registry so the browser never hits it directly.
-app.get("/api/asset-registry/search", async (req, res) => {
-  const { q = "", limit = 20 } = req.query;
-  try {
-    const upstream = await fetch(
-      `${ASSET_REGISTRY_URL}/api/assets?search=${encodeURIComponent(q)}&limit=${limit}`
-    );
-    if (!upstream.ok) return res.status(upstream.status).json({ error: "Asset Registry error" });
-    res.json(await upstream.json());
-  } catch (e) {
-    res.status(502).json({ error: `Asset Registry unreachable: ${e.message}` });
-  }
-});
+// ── Asset Registry — routed via the generic connector proxy ──────────────────
+// Search assets:  GET /api/connect/asset-registry/assets?search=pump&limit=20
+// Get one asset:  GET /api/connect/asset-registry/assets/:id
+// The connector base URL is stored in pm_connectors (name = 'asset-registry')
+// and can be changed at runtime via PUT /api/connectors/asset-registry.
 
 // ── Asset mention queries ─────────────────────────────────────────────────────
 

@@ -158,7 +158,7 @@ function openAssetRefPicker(view) {
     }
     results.innerHTML = `<div class="arp-hint">Searching…</div>`;
     try {
-      const res  = await fetch(`/api/asset-registry/search?q=${encodeURIComponent(q)}&limit=20`);
+      const res  = await fetch(`/api/connect/asset-registry/assets?search=${encodeURIComponent(q)}&limit=20`);
       const data = await res.json();
       if (!data.length) {
         results.innerHTML = `<div class="arp-hint">No assets found for "${q}"</div>`;
