@@ -22,7 +22,7 @@
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | `/api/docs` | List all documents. Returns `[{ id, title, tags, created_at, updated_at }]` |
+| `GET` | `/api/docs` | List documents. Optional filters: `?search=` (title · tags · content text), `?tag=` (exact tag value), `?collection=<uuid>`, `?limit=` (default 200, max 1000), `?offset=`. Returns `[{ id, title, tags, word_count, version_count, collection_ids, created_at, updated_at }]` |
 | `GET` | `/api/docs/stats` | Aggregate stats: `{ total_docs, active_this_week, created_this_month, total_bytes, total_versions }` |
 | `GET` | `/api/docs/:id` | Fetch one document. Returns full row including `content` (ProseMirror JSON) |
 | `POST` | `/api/docs` | Create a document. Body: `{ id, content, title }`. Idempotent (ON CONFLICT DO NOTHING) |

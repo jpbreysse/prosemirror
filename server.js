@@ -360,8 +360,59 @@ app.post("/api/upload", upload.single("file"), (req, res) => {
 });
 
 // List all documents with version count and word count
+// GET /api/docs
+//   ?search=<text>      — ILIKE filter on title; also searches tag values and plain
+//                          text extracted from content JSON
+//   ?tag=<value>        — documents whose tags array contains this value (exact)
+//   ?collection=<uuid>  — documents belonging to this collection
+//   ?limit=<n>          — default 200, max 1000
+//   ?offset=<n>         — default 0
 app.get("/api/docs", async (req, res) => {
   try {
+    const search     = (req.query.search     || "").trim();
+    const tag        = (req.query.tag        || "").trim();
+    const collection = (req.query.collection || "").trim();
+    const limit      = Math.min(parseInt(req.query.limit  || "200", 10), 1000);
+    const offset     = Math.max(parseInt(req.query.offset || "0",   10), 0);
+
+    const conds  = [];
+    const params = [];
+    let   i      = 1;
+
+    if (search) {
+      // Match title, any tag value, or raw text extracted from the content JSON.
+      // The content cast strips JSON noise well enough for basic keyword search.
+      conds.push(`(
+        d.title ILIKE $${i}
+        OR EXISTS (SELECT 1 FROM unnest(d.tags) t WHERE t ILIKE $${i})
+        OR regexp_replace(
+             regexp_replace(d.content::text, '"type"\\s*:\\s*"[^"]*"', '', 'g'),
+             '[^a-zA-ZÀ-ÿ0-9\\s]', ' ', 'g'
+           ) ILIKE $${i}
+      )`);
+      params.push(`%${search}%`);
+      i++;
+    }
+
+    if (tag) {
+      conds.push(`$${i} = ANY(d.tags)`);
+      params.push(tag);
+      i++;
+    }
+
+    if (collection) {
+      conds.push(`EXISTS (
+        SELECT 1 FROM pm_collection_docs cd
+        WHERE cd.doc_id = d.id AND cd.collection_id = $${i}::uuid
+      )`);
+      params.push(collection);
+      i++;
+    }
+
+    const where = conds.length ? `WHERE ${conds.join(" AND ")}` : "";
+
+    params.push(limit, offset);
+
     const { rows } = await pool.query(`
       SELECT
         d.id,
@@ -370,7 +421,6 @@ app.get("/api/docs", async (req, res) => {
         d.updated_at,
         d.tags,
         COALESCE(v.version_count, 0)::int AS version_count,
-        -- word count: extract all text from JSON, split on whitespace
         array_length(
           regexp_split_to_array(
             trim(regexp_replace(
@@ -392,8 +442,11 @@ app.get("/api/docs", async (req, res) => {
         FROM pm_collection_docs
         GROUP BY doc_id
       ) c ON c.doc_id = d.id
+      ${where}
       ORDER BY d.updated_at DESC
-    `);
+      LIMIT $${i} OFFSET $${i + 1}
+    `, params);
+
     res.json(rows);
   } catch (e) {
     res.status(500).json({ error: e.message });
