@@ -36,6 +36,7 @@ import { insertMermaidBlock }      from "./extensions/mermaidBlock/commands.js";
 import { insertBomBlock }          from "./extensions/bomBlock/commands.js";
 import { insertMaintenanceBlock }  from "./extensions/maintenanceBlock/commands.js";
 import { insertTodoBlock }         from "./extensions/todoBlock/commands.js";
+import { insertAssetRef }          from "./extensions/assetRef/commands.js";
 import {
   insertTable,
   addRowAfter, addRowBefore, deleteRow,
@@ -103,6 +104,122 @@ function separator() {
   const s = document.createElement("span");
   s.className = "menu-sep";
   return s;
+}
+
+// ------------------------------------------------------------------
+// Asset Reference picker
+// ------------------------------------------------------------------
+
+/**
+ * Open a modal picker that searches the Asset Registry and inserts an
+ * assetRef inline node at the current cursor position.
+ */
+function openAssetRefPicker(view) {
+  // Remove any existing picker
+  document.getElementById("asset-ref-picker")?.remove();
+
+  const overlay = document.createElement("div");
+  overlay.id = "asset-ref-picker";
+  overlay.className = "arp-overlay";
+
+  const modal = document.createElement("div");
+  modal.className = "arp-modal";
+
+  // ── Header ────────────────────────────────────────────────────
+  const hdr = document.createElement("div");
+  hdr.className = "arp-header";
+  hdr.innerHTML = `<span class="arp-title">⚙ Insert Asset Reference</span>`;
+  const closeBtn = document.createElement("button");
+  closeBtn.type = "button"; closeBtn.className = "arp-close"; closeBtn.textContent = "×";
+  closeBtn.addEventListener("click", () => overlay.remove());
+  hdr.appendChild(closeBtn);
+
+  // ── Search input ──────────────────────────────────────────────
+  const searchWrap = document.createElement("div");
+  searchWrap.className = "arp-search-wrap";
+  const searchInp = document.createElement("input");
+  searchInp.type = "text"; searchInp.className = "arp-search"; searchInp.placeholder = "Search by tag or name…";
+  searchWrap.appendChild(searchInp);
+
+  // ── Results list ──────────────────────────────────────────────
+  const results = document.createElement("div");
+  results.className = "arp-results";
+  results.innerHTML = `<div class="arp-hint">Start typing to search assets…</div>`;
+
+  let debounce = null;
+  let lastQuery = "";
+
+  async function doSearch(q) {
+    if (q === lastQuery) return;
+    lastQuery = q;
+    if (!q.trim()) {
+      results.innerHTML = `<div class="arp-hint">Start typing to search assets…</div>`;
+      return;
+    }
+    results.innerHTML = `<div class="arp-hint">Searching…</div>`;
+    try {
+      const res  = await fetch(`/api/asset-registry/search?q=${encodeURIComponent(q)}&limit=20`);
+      const data = await res.json();
+      if (!data.length) {
+        results.innerHTML = `<div class="arp-hint">No assets found for "${q}"</div>`;
+        return;
+      }
+      results.innerHTML = "";
+      data.forEach(asset => {
+        const row = document.createElement("div");
+        row.className = "arp-row";
+
+        const tag = document.createElement("span");
+        tag.className = "arp-row-tag"; tag.textContent = asset.tag || "—";
+
+        const name = document.createElement("span");
+        name.className = "arp-row-name"; name.textContent = asset.name || "";
+
+        const cls = document.createElement("span");
+        cls.className = "arp-row-cls"; cls.textContent = asset.classCode || "";
+
+        row.append(tag, name, cls);
+        row.addEventListener("mousedown", e => {
+          e.preventDefault();
+          const display = asset.tag && asset.name
+            ? `${asset.tag} (${asset.name})`
+            : (asset.tag || asset.name || asset.id);
+          view.dispatch(
+            view.state.tr.replaceSelectionWith(
+              view.state.schema.nodes.assetRef.create({
+                assetId: asset.id,
+                tag:     asset.tag     || "",
+                display,
+              })
+            ).scrollIntoView()
+          );
+          overlay.remove();
+          view.focus();
+        });
+        results.appendChild(row);
+      });
+    } catch (err) {
+      results.innerHTML = `<div class="arp-hint arp-error">Search failed: ${err.message}</div>`;
+    }
+  }
+
+  searchInp.addEventListener("input", () => {
+    clearTimeout(debounce);
+    debounce = setTimeout(() => doSearch(searchInp.value.trim()), 300);
+  });
+  searchInp.addEventListener("keydown", e => {
+    if (e.key === "Escape") overlay.remove();
+  });
+
+  // Close on overlay click (outside modal)
+  overlay.addEventListener("mousedown", e => {
+    if (e.target === overlay) overlay.remove();
+  });
+
+  modal.append(hdr, searchWrap, results);
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+  setTimeout(() => searchInp.focus(), 0);
 }
 
 // ------------------------------------------------------------------
@@ -249,6 +366,7 @@ export function menuPlugin(containerSelector = "#toolbar", extConfig = null) {
         isOn("maintenanceBlock") && button("🔧",  "Insert Maintenance Schedule", () => run(insertMaintenanceBlock())),
         isOn("todoBlock")        && button("✅",  "Insert Daily Todo",           () => run(insertTodoBlock())),
         isOn("mermaidBlock")     && button("🔀",  "Insert Mermaid Diagram",      () => run(insertMermaidBlock())),
+        isOn("assetRef")         && button("⚙",   "Insert Asset Reference",      () => openAssetRefPicker(editorView)),
         isOn("reply")            && button("💬",  "Add Reply",                   () => run(insertReply())),
       ].filter(Boolean);
 

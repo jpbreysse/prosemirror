@@ -643,6 +643,26 @@ const todoBlockNodeSpec = {
   },
 };
 
+// ── Asset Reference (inline) ──────────────────────────────────────────────────
+// An inline atom chip that references an asset in the external Asset Registry.
+const assetRefNodeSpec = {
+  group:  "inline",
+  inline: true,
+  atom:   true,
+  attrs: {
+    assetId: { default: "" },
+    tag:     { default: "" },
+    display: { default: "" },
+  },
+  parseDOM: [{ tag: "span[data-asset-ref]", getAttrs(dom) {
+    try { return JSON.parse(dom.getAttribute("data-asset-ref")); }
+    catch { return {}; }
+  }}],
+  toDOM(node) {
+    return ["span", { "data-asset-ref": JSON.stringify(node.attrs) }];
+  },
+};
+
 const withCustom = withLists.append({
   graph: graphNodeSpec,
   map: mapNodeSpec,
@@ -670,6 +690,7 @@ const withCustom = withLists.append({
   bomBlock:         bomBlockNodeSpec,
   mermaidBlock:     mermaidBlockNodeSpec,
   todoBlock:        todoBlockNodeSpec,
+  assetRef:         assetRefNodeSpec,
 });
 
 const nodes = withCustom.append(tableNodes({ tableGroup: "block", cellContent: "block+" }));

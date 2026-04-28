@@ -50,6 +50,7 @@ import { MermaidBlockNodeView }       from "./extensions/mermaidBlock/nodeView.j
 import { BomBlockNodeView }           from "./extensions/bomBlock/nodeView.js";
 import { MaintenanceBlockNodeView }   from "./extensions/maintenanceBlock/nodeView.js";
 import { TodoBlockNodeView }          from "./extensions/todoBlock/nodeView.js";
+import { AssetRefNodeView }           from "./extensions/assetRef/nodeView.js";
 
 // ── URL params ────────────────────────────────────────────────────────────────
 
@@ -550,6 +551,7 @@ async function init() {
       bomBlock:         (node, view, getPos) => new BomBlockNodeView(node, view, getPos),
       mermaidBlock:     (node, view, getPos) => new MermaidBlockNodeView(node, view, getPos),
       todoBlock:        (node, view, getPos) => new TodoBlockNodeView(node, view, getPos),
+      assetRef:         (node, view, getPos) => new AssetRefNodeView(node, view, getPos),
     },
 
     // ── Drop image files anywhere in the document ────────────────────────────

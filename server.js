@@ -141,6 +141,26 @@ async function initDb() {
     CREATE INDEX IF NOT EXISTS pm_audit_log_ts_idx ON pm_audit_log (ts DESC)
   `);
 
+  // Asset-document mention index
+  // Tracks which assets are referenced in which documents (kept current on every save).
+  // asset_id is TEXT with no FK — assets live in the external Asset Registry.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS pm_asset_document_mention (
+      document_id   TEXT        NOT NULL REFERENCES pm_documents(id) ON DELETE CASCADE,
+      asset_id      TEXT        NOT NULL,
+      tag           TEXT        NOT NULL DEFAULT '',
+      display       TEXT        NOT NULL DEFAULT '',
+      mention_count INT         NOT NULL DEFAULT 1,
+      first_seen_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      last_seen_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+      PRIMARY KEY (document_id, asset_id)
+    )
+  `);
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS pm_asset_mention_asset_idx
+      ON pm_asset_document_mention (asset_id)
+  `);
+
   // ── Lummus Phase 2 — Engagement tables ──────────────────────────────────────
   await pool.query(`
     CREATE TABLE IF NOT EXISTS lci_workshops (
@@ -428,6 +448,57 @@ app.post("/api/docs", async (req, res) => {
   }
 });
 
+// ── Asset-mention helpers ─────────────────────────────────────────────────────
+
+/**
+ * Walk a ProseMirror doc JSON tree and collect all assetRef nodes.
+ * Returns a Map<assetId, { tag, display, count }>.
+ */
+function collectAssetRefs(nodes, acc = new Map()) {
+  for (const n of nodes || []) {
+    if (n.type === "assetRef" && n.attrs?.assetId) {
+      const { assetId, tag = "", display = "" } = n.attrs;
+      const cur = acc.get(assetId) || { tag, display, count: 0 };
+      cur.count++;
+      acc.set(assetId, cur);
+    }
+    if (n.content) collectAssetRefs(n.content, acc);
+  }
+  return acc;
+}
+
+/**
+ * Sync pm_asset_document_mention for a given document.
+ * Deletes mentions that are no longer present and upserts current ones.
+ */
+async function syncAssetMentions(docId, content) {
+  const refs     = collectAssetRefs(content?.content);
+  const assetIds = [...refs.keys()];
+
+  // Remove mentions for assets no longer referenced in the doc
+  await pool.query(
+    `DELETE FROM pm_asset_document_mention
+     WHERE document_id = $1
+       AND NOT (asset_id = ANY($2::text[]))`,
+    [docId, assetIds]
+  );
+
+  // Upsert each current mention
+  for (const [assetId, { tag, display, count }] of refs) {
+    await pool.query(
+      `INSERT INTO pm_asset_document_mention
+         (document_id, asset_id, tag, display, mention_count, first_seen_at, last_seen_at)
+       VALUES ($1,$2,$3,$4,$5,now(),now())
+       ON CONFLICT (document_id, asset_id) DO UPDATE SET
+         mention_count = EXCLUDED.mention_count,
+         tag           = EXCLUDED.tag,
+         display       = EXCLUDED.display,
+         last_seen_at  = now()`,
+      [docId, assetId, tag, display, count]
+    );
+  }
+}
+
 // Upsert (save) a document
 app.put("/api/docs/:id", async (req, res) => {
   const { content, title } = req.body;
@@ -442,6 +513,12 @@ app.put("/api/docs/:id", async (req, res) => {
        RETURNING *`,
       [req.params.id, JSON.stringify(content), title || ""]
     );
+
+    // Keep asset mention index current (fire-and-forget, doesn't block the response)
+    syncAssetMentions(req.params.id, content).catch(e =>
+      console.error("[assetMentions] sync failed:", e.message)
+    );
+
     res.json(rows[0]);
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -1044,6 +1121,60 @@ app.get("/api/query/critical-machines", async (req, res) => {
     results.sort((a, b) => (order[a.combined_status] ?? 9) - (order[b.combined_status] ?? 9));
 
     res.json(results);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── Asset Registry proxy ──────────────────────────────────────────────────────
+
+const ASSET_REGISTRY_URL = process.env.ASSET_REGISTRY_URL || "http://localhost:5177";
+
+// GET /api/asset-registry/search?q=pump&limit=20
+// Proxies to the external Asset Registry so the browser never hits it directly.
+app.get("/api/asset-registry/search", async (req, res) => {
+  const { q = "", limit = 20 } = req.query;
+  try {
+    const upstream = await fetch(
+      `${ASSET_REGISTRY_URL}/api/assets?search=${encodeURIComponent(q)}&limit=${limit}`
+    );
+    if (!upstream.ok) return res.status(upstream.status).json({ error: "Asset Registry error" });
+    res.json(await upstream.json());
+  } catch (e) {
+    res.status(502).json({ error: `Asset Registry unreachable: ${e.message}` });
+  }
+});
+
+// ── Asset mention queries ─────────────────────────────────────────────────────
+
+// GET /api/asset-mentions?assetId=<uuid>   → documents that reference this asset
+// GET /api/asset-mentions?docId=<id>        → assets referenced in this document
+app.get("/api/asset-mentions", async (req, res) => {
+  const { assetId, docId } = req.query;
+  try {
+    if (assetId) {
+      const { rows } = await pool.query(
+        `SELECT m.document_id, m.tag, m.display, m.mention_count, m.last_seen_at,
+                d.title
+         FROM pm_asset_document_mention m
+         JOIN pm_documents d ON d.id = m.document_id
+         WHERE m.asset_id = $1
+         ORDER BY m.last_seen_at DESC`,
+        [assetId]
+      );
+      return res.json(rows);
+    }
+    if (docId) {
+      const { rows } = await pool.query(
+        `SELECT asset_id, tag, display, mention_count, first_seen_at, last_seen_at
+         FROM pm_asset_document_mention
+         WHERE document_id = $1
+         ORDER BY tag`,
+        [docId]
+      );
+      return res.json(rows);
+    }
+    res.status(400).json({ error: "Provide assetId or docId query parameter" });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
