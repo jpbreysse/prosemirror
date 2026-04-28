@@ -11,6 +11,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.90.0",
     "chart.js": "^4.5.1",
     "concurrently": "^9.2.1",
     "cors": "^2.8.6",
@@ -19,7 +20,9 @@
     "jszip": "^3.10.1",
     "leaflet": "^1.9.4",
     "marked": "^17.0.5",
+    "mermaid": "^11.14.0",
     "multer": "^2.1.1",
+    "pdfjs-dist": "^5.6.205",
     "pg": "^8.20.0",
     "prosemirror-commands": "^1.6.0",
     "prosemirror-example-setup": "^1.2.0",
@@ -33,7 +36,8 @@
     "prosemirror-tables": "^1.8.5",
     "prosemirror-transform": "^1.10.0",
     "prosemirror-view": "^1.37.0",
-    "smiles-drawer": "^2.2.1"
+    "smiles-drawer": "^2.2.1",
+    "tesseract.js": "^7.0.0"
   },
   "devDependencies": {
     "vite": "^5.0.0"

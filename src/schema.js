@@ -569,6 +569,60 @@ const matterBlockNodeSpec = {
   },
 };
 
+const maintenanceBlockNodeSpec = {
+  group: "block",
+  atom:  true,
+  attrs: {
+    title: { default: "Maintenance Schedule" },
+    tasks: { default: [] },
+  },
+  parseDOM: [{ tag: "div[data-maintenance]", getAttrs(dom) {
+    try {
+      return {
+        title: dom.getAttribute("data-maintenance-title") || "Maintenance Schedule",
+        tasks: JSON.parse(dom.getAttribute("data-maintenance") || "[]"),
+      };
+    } catch { return false; }
+  }}],
+  toDOM(node) {
+    return ["div", {
+      "data-maintenance":       JSON.stringify(node.attrs.tasks),
+      "data-maintenance-title": node.attrs.title,
+    }];
+  },
+};
+
+const bomBlockNodeSpec = {
+  group: "block",
+  atom:  true,
+  attrs: {
+    tree: {
+      default: { id: "root", name: "Machine", qty: 1, unit: "unit", children: [] },
+    },
+  },
+  parseDOM: [{ tag: "div[data-bom]", getAttrs(dom) {
+    try { return { tree: JSON.parse(dom.getAttribute("data-bom")) }; }
+    catch { return false; }
+  }}],
+  toDOM(node) {
+    return ["div", { "data-bom": JSON.stringify(node.attrs.tree) }];
+  },
+};
+
+const mermaidBlockNodeSpec = {
+  group: "block",
+  atom: true,
+  attrs: {
+    code: { default: "flowchart TB\n    A --> B" },
+  },
+  parseDOM: [{ tag: "div[data-mermaid]", getAttrs(dom) {
+    return { code: dom.getAttribute("data-mermaid") || "" };
+  }}],
+  toDOM(node) {
+    return ["div", { "data-mermaid": node.attrs.code }];
+  },
+};
+
 const withCustom = withLists.append({
   graph: graphNodeSpec,
   map: mapNodeSpec,
@@ -592,6 +646,9 @@ const withCustom = withLists.append({
   partyBlock:       partyBlockNodeSpec,
   matterBlock:      matterBlockNodeSpec,
   versionTimeline:  versionTimelineNodeSpec,
+  maintenanceBlock: maintenanceBlockNodeSpec,
+  bomBlock:         bomBlockNodeSpec,
+  mermaidBlock:     mermaidBlockNodeSpec,
 });
 
 const nodes = withCustom.append(tableNodes({ tableGroup: "block", cellContent: "block+" }));

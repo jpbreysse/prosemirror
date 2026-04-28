@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Extensions — ProseMirror</title>
+    <style>
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+      body {
+        font-family: system-ui, -apple-system, sans-serif;
+        background: #f4f4f5;
+        min-height: 100dvh;
+        color: #18181b;
+      }
+
+      .layout {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 2.5rem 1.5rem 4rem;
+      }
+
+      /* ── Header ── */
+      .page-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 2rem;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+      .page-header-left { display: flex; align-items: center; gap: 1rem; }
+      .page-logo {
+        width: 36px; height: 36px; border-radius: 9px;
+        background: #6366f1;
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+      }
+      .page-title    { font-size: 1.6rem; font-weight: 700; color: #18181b; }
+      .page-subtitle { font-size: 0.83rem; color: #71717a; margin-top: 2px; }
+
+      .back-btn {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 8px 14px;
+        border: 1px solid #e2e8f0; border-radius: 8px;
+        background: #fff; color: #374151;
+        font-size: 0.85rem; font-weight: 500; cursor: pointer;
+        text-decoration: none;
+        transition: background 0.12s;
+      }
+      .back-btn:hover { background: #f8fafc; }
+
+      /* ── Reload notice ── */
+      .reload-notice {
+        display: none;
+        align-items: center;
+        gap: 10px;
+        background: #eef2ff;
+        border: 1px solid #c7d2fe;
+        border-radius: 8px;
+        padding: 10px 16px;
+        font-size: 0.83rem;
+        color: #3730a3;
+        margin-bottom: 1.25rem;
+      }
+      .reload-notice.visible { display: flex; }
+      .reload-notice a {
+        color: #4f46e5;
+        font-weight: 600;
+        text-decoration: underline;
+        cursor: pointer;
+      }
+
+      /* ── Stats bar ── */
+      .stats-bar {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 1.75rem;
+        flex-wrap: wrap;
+      }
+      .stat-pill {
+        background: #fff;
+        border: 1px solid #e4e4e7;
+        border-radius: 8px;
+        padding: 8px 16px;
+        font-size: 0.82rem;
+        color: #52525b;
+        display: flex; align-items: center; gap: 6px;
+      }
+      .stat-pill strong { color: #6366f1; font-size: 1rem; }
+      .stat-pill.stat-enabled strong { color: #16a34a; }
+      .stat-pill.stat-disabled strong { color: #dc2626; }
+
+      /* ── Filters ── */
+      .filters {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 1.25rem;
+        flex-wrap: wrap;
+      }
+      .search-wrap { position: relative; flex: 1; min-width: 200px; }
+      .search-icon {
+        position: absolute; left: 11px; top: 50%;
+        transform: translateY(-50%); pointer-events: none;
+      }
+      .search-input {
+        width: 100%; padding: 9px 14px 9px 34px;
+        border: 1px solid #e4e4e7; border-radius: 8px;
+        font-size: 0.88rem; background: #fff; color: #18181b;
+        outline: none; transition: border-color 0.15s;
+      }
+      .search-input:focus { border-color: #6366f1; }
+
+      .filter-select {
+        border: 1px solid #e4e4e7; border-radius: 7px;
+        padding: 8px 12px; font-size: 0.83rem;
+        background: #fff; color: #18181b; outline: none; cursor: pointer;
+      }
+      .filter-select:focus { border-color: #6366f1; }
+
+      /* ── Grid ── */
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+        gap: 1rem;
+      }
+
+      /* ── Card ── */
+      .card {
+        background: #fff;
+        border: 1.5px solid #e4e4e7;
+        border-radius: 12px;
+        padding: 18px 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        transition: box-shadow 0.15s, border-color 0.15s, transform 0.1s, opacity 0.2s;
+        cursor: default;
+      }
+      .card:hover {
+        border-color: #a5b4fc;
+        box-shadow: 0 4px 16px rgba(99,102,241,0.1);
+        transform: translateY(-1px);
+      }
+      .card.is-disabled {
+        opacity: 0.55;
+      }
+      .card.is-disabled:hover {
+        border-color: #d1d5db;
+        box-shadow: none;
+        transform: none;
+      }
+
+      .card-top {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+      }
+
+      .card-icon {
+        width: 40px; height: 40px;
+        border-radius: 10px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.2rem;
+        flex-shrink: 0;
+        transition: filter 0.2s;
+      }
+      .card.is-disabled .card-icon { filter: grayscale(0.7); }
+
+      .card-header { flex: 1; min-width: 0; }
+      .card-name {
+        font-size: 0.93rem;
+        font-weight: 700;
+        color: #18181b;
+        margin-bottom: 3px;
+      }
+      .card-key {
+        font-family: ui-monospace, monospace;
+        font-size: 0.72rem;
+        color: #94a3b8;
+      }
+
+      .card-desc {
+        font-size: 0.82rem;
+        color: #52525b;
+        line-height: 1.55;
+      }
+
+      .card-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin-top: 2px;
+      }
+      .tag {
+        font-size: 0.68rem;
+        font-weight: 600;
+        padding: 2px 8px;
+        border-radius: 999px;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+      }
+      .tag--category { background: #eef2ff; color: #4338ca; }
+      .tag--lib      { background: #f0fdf4; color: #15803d; }
+      .tag--api      { background: #fff7ed; color: #c2410c; }
+      .tag--core     { background: #fdf4ff; color: #7e22ce; }
+
+      .card-files {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        padding-top: 6px;
+        border-top: 1px solid #f4f4f5;
+      }
+      .file-badge {
+        font-size: 0.7rem;
+        padding: 2px 8px;
+        border: 1px solid #e2e8f0;
+        border-radius: 5px;
+        color: #64748b;
+        background: #f8fafc;
+        font-family: ui-monospace, monospace;
+      }
+
+      /* ── Toggle switch ── */
+      .toggle {
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        cursor: pointer;
+        user-select: none;
+      }
+      .toggle input { display: none; }
+      .toggle-track {
+        width: 36px;
+        height: 20px;
+        background: #d1d5db;
+        border-radius: 10px;
+        position: relative;
+        transition: background 0.18s;
+      }
+      .toggle input:checked + .toggle-track { background: #6366f1; }
+      .toggle-thumb {
+        position: absolute;
+        top: 3px; left: 3px;
+        width: 14px; height: 14px;
+        border-radius: 50%;
+        background: #fff;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        transition: transform 0.18s;
+      }
+      .toggle input:checked + .toggle-track .toggle-thumb { transform: translateX(16px); }
+      .toggle-saving .toggle-track { background: #e0e7ff; }
+
+      /* ── Empty ── */
+      .empty {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 4rem 2rem;
+        color: #a1a1aa;
+      }
+      .empty-icon  { font-size: 2.5rem; margin-bottom: 1rem; }
+      .empty-title { font-size: 1rem; font-weight: 600; color: #52525b; }
+
+      /* ── API Inspector ── */
+      .api-inspector {
+        margin-top: 2.5rem;
+        border: 1.5px solid #e4e4e7;
+        border-radius: 12px;
+        overflow: hidden;
+        background: #fff;
+      }
+      .api-inspector-hdr {
+        display: flex; align-items: center; gap: 10px;
+        padding: 10px 16px;
+        background: #f9f9fb;
+        border-bottom: 1px solid #e4e4e7;
+        cursor: pointer;
+        user-select: none;
+      }
+      .api-inspector-hdr:hover { background: #f4f4f5; }
+      .api-inspector-title {
+        font-size: 12px; font-weight: 700; letter-spacing: .05em;
+        text-transform: uppercase; color: #71717a; flex: 1;
+        display: flex; align-items: center; gap: 8px;
+      }
+      .api-inspector-chevron {
+        color: #9ca3af; font-size: 14px;
+        transition: transform .2s;
+      }
+      .api-inspector.open .api-inspector-chevron { transform: rotate(180deg); }
+
+      .api-inspector-body { display: none; }
+      .api-inspector.open .api-inspector-body { display: block; }
+
+      .api-row {
+        display: flex; align-items: center; gap: 10px;
+        padding: 10px 16px;
+        border-bottom: 1px solid #f4f4f5;
+        flex-wrap: wrap;
+      }
+      .api-row:last-child { border-bottom: none; }
+      .api-method {
+        font-size: 11px; font-weight: 800; font-family: ui-monospace, monospace;
+        border-radius: 4px; padding: 2px 7px; flex-shrink: 0;
+      }
+      .api-method.get  { background: #dbeafe; color: #1d4ed8; }
+      .api-method.put  { background: #fef9c3; color: #854d0e; }
+      .api-url {
+        font-size: 12.5px; font-family: ui-monospace, monospace;
+        color: #374151; flex: 1; min-width: 200px;
+      }
+      .api-desc { font-size: 12px; color: #9ca3af; }
+      .api-run-btn {
+        font-size: 11.5px; font-weight: 600;
+        background: #6366f1; color: #fff;
+        border: none; border-radius: 6px;
+        padding: 5px 12px; cursor: pointer;
+        transition: background .12s; flex-shrink: 0;
+      }
+      .api-run-btn:hover  { background: #4f46e5; }
+      .api-run-btn:disabled { background: #a5b4fc; }
+      .api-run-btn.put-btn {
+        background: #fff; color: #374151;
+        border: 1.5px solid #e4e4e7;
+      }
+      .api-run-btn.put-btn:hover { background: #f4f4f5; }
+
+      .api-response {
+        margin: 0 16px 12px;
+        border-radius: 8px; overflow: hidden;
+        font-size: 12px; font-family: ui-monospace, monospace;
+        display: none;
+      }
+      .api-response.visible { display: block; }
+      .api-response-bar {
+        display: flex; align-items: center; gap: 8px;
+        padding: 6px 12px;
+        font-size: 11px; font-weight: 600;
+      }
+      .api-response-bar.ok    { background: #dcfce7; color: #15803d; }
+      .api-response-bar.error { background: #fee2e2; color: #dc2626; }
+      .api-response-bar.info  { background: #eff6ff; color: #1d4ed8; }
+      .api-copy-btn {
+        margin-left: auto; font-size: 11px; font-weight: 600;
+        background: none; border: none; cursor: pointer;
+        color: inherit; opacity: .7;
+      }
+      .api-copy-btn:hover { opacity: 1; }
+      .api-response-body {
+        background: #1e1e2e; color: #cdd6f4;
+        padding: 12px 14px;
+        overflow-x: auto; white-space: pre;
+        max-height: 300px; overflow-y: auto;
+        line-height: 1.55;
+      }
+      /* JSON syntax colouring */
+      .json-key    { color: #89b4fa; }
+      .json-str    { color: #a6e3a1; }
+      .json-bool-t { color: #a6e3a1; font-weight: 700; }
+      .json-bool-f { color: #f38ba8; font-weight: 700; }
+      .json-num    { color: #fab387; }
+      .json-null   { color: #9399b2; }
+
+      .api-put-form {
+        margin: 0 16px 12px;
+        display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+      }
+      .api-put-key, .api-put-val {
+        font-size: 12.5px; font-family: ui-monospace, monospace;
+        border: 1.5px solid #e4e4e7; border-radius: 6px;
+        padding: 5px 10px; outline: none;
+        transition: border-color .15s; background: #fff;
+      }
+      .api-put-key { width: 160px; }
+      .api-put-key:focus, .api-put-val:focus { border-color: #6366f1; }
+    </style>
+  </head>
+  <body>
+    <div class="layout">
+
+      <header class="page-header">
+        <div class="page-header-left">
+          <div class="page-logo">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M4 5h12M4 10h12M4 15h7" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div>
+            <h1 class="page-title">Extensions</h1>
+            <p class="page-subtitle" id="subtitle">Loading…</p>
+          </div>
+        </div>
+        <a href="/docs.html" class="back-btn">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+            <path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Documents
+        </a>
+      </header>
+
+      <!-- Reload notice -->
+      <div class="reload-notice" id="reloadNotice">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <circle cx="8" cy="8" r="6.5" stroke="#6366f1" stroke-width="1.4"/>
+          <path d="M8 5v3.5l2.2 2.2" stroke="#6366f1" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+        Extension changes are saved. <a id="reloadLink">Open the editor</a> to see the updated toolbar.
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-bar" id="statsBar"></div>
+
+      <!-- Filters -->
+      <div class="filters">
+        <div class="search-wrap">
+          <svg class="search-icon" width="15" height="15" viewBox="0 0 16 16" fill="none">
+            <circle cx="7" cy="7" r="4.5" stroke="#9ca3af" stroke-width="1.5"/>
+            <path d="M10.5 10.5L13 13" stroke="#9ca3af" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          <input class="search-input" id="searchInput" type="text" placeholder="Search extensions…"/>
+        </div>
+        <select class="filter-select" id="categoryFilter">
+          <option value="">All categories</option>
+          <option value="legal">Legal</option>
+          <option value="data">Data / Charts</option>
+          <option value="media">Media</option>
+          <option value="productivity">Productivity</option>
+          <option value="science">Science</option>
+          <option value="versioning">Versioning</option>
+          <option value="layout">Layout</option>
+        </select>
+        <select class="filter-select" id="libraryFilter">
+          <option value="">All types</option>
+          <option value="api">Requires API</option>
+          <option value="lib">Third-party lib</option>
+          <option value="core">Core / built-in</option>
+        </select>
+        <select class="filter-select" id="statusFilter">
+          <option value="">All statuses</option>
+          <option value="enabled">Enabled</option>
+          <option value="disabled">Disabled</option>
+        </select>
+      </div>
+
+      <!-- Grid -->
+      <div class="grid" id="grid"></div>
+
+      <!-- API Inspector -->
+      <div class="api-inspector" id="apiInspector">
+        <div class="api-inspector-hdr" id="inspectorToggle">
+          <div class="api-inspector-title">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+              <circle cx="8" cy="8" r="6.5" stroke="#71717a" stroke-width="1.4"/>
+              <path d="M8 5v3.5l2 2" stroke="#71717a" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+            API Inspector
+            <span style="font-size:10px;font-weight:500;text-transform:none;letter-spacing:0;color:#9ca3af">
+              — live test the extensions config endpoints
+            </span>
+          </div>
+          <span class="api-inspector-chevron">▾</span>
+        </div>
+        <div class="api-inspector-body">
+
+          <!-- GET row -->
+          <div class="api-row">
+            <span class="api-method get">GET</span>
+            <span class="api-url">/api/extensions/config</span>
+            <span class="api-desc">Returns current enabled/disabled state for all extensions</span>
+            <button class="api-run-btn" id="btnGet">▶ Run</button>
+          </div>
+          <div class="api-response" id="getResponse"></div>
+
+          <!-- PUT row -->
+          <div class="api-row">
+            <span class="api-method put">PUT</span>
+            <span class="api-url">/api/extensions/config</span>
+            <span class="api-desc">Set one key: </span>
+            <input class="api-put-key" id="putKey" placeholder="e.g. graph" value="graph"/>
+            <select class="api-put-val" id="putVal" style="width:90px">
+              <option value="true">true</option>
+              <option value="false">false</option>
+            </select>
+            <button class="api-run-btn put-btn" id="btnPut">▶ Send</button>
+          </div>
+          <div class="api-response" id="putResponse"></div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <script>
+      // ── Extension catalog ────────────────────────────────────────────────────
+
+      const EXTENSIONS = [
+        { key:"clauseBlock",     name:"Clause Block",          icon:"📋", iconBg:"#eef2ff", desc:"Live block connected to the LexDraft clause library. Search, insert and track standard clauses. Supports local edits without overwriting the library copy.",                                                     category:"legal",       type:"api",  files:["nodeView.js","commands.js"],             toolbar:"📋 Insert Clause Block" },
+        { key:"partyBlock",      name:"Party Block",           icon:"🏢", iconBg:"#f0fdf4", desc:"Displays a live legal party card (company, individual, government, NGO) from the LexDraft party registry. Shows contact details, signatory, and sanctions status.",                                              category:"legal",       type:"api",  files:["nodeView.js","commands.js"],             toolbar:"🏢 Insert Party Block" },
+        { key:"matterBlock",     name:"Matter Block",          icon:"📁", iconBg:"#fff7ed", desc:"Links a document to a legal matter from LexDraft. Shows type, status, deadline, parties, and a direct link to the matter in the LexDraft app.",                                                                category:"legal",       type:"api",  files:["nodeView.js","commands.js"],             toolbar:"📁 Insert Matter Block" },
+        { key:"versionTimeline", name:"Version Timeline",      icon:"🕓", iconBg:"#f0f9ff", desc:"Inline block showing the document's full version history as a timeline. Save new snapshots, restore old versions, and diff between any two versions without leaving the document.",                              category:"versioning",  type:"core", files:["nodeView.js","commands.js"],             toolbar:"🕓 Insert Version Timeline" },
+        { key:"mermaidBlock",    name:"Mermaid Diagram",       icon:"🔀", iconBg:"#f0fdf4", desc:"Renders any Mermaid diagram (flowchart, sequence, ER, Gantt, class diagram…) as an inline block. Double-click or hover to edit the source; Cmd+Enter to re-render. Powered by the mermaid.js library.",      category:"data",        type:"lib",  lib:"mermaid.js",        files:["nodeView.js","commands.js"], toolbar:"🔀 Insert Mermaid Diagram" },
+        { key:"graph",           name:"Chart",                 icon:"📊", iconBg:"#fdf4ff", desc:"Embeds a Chart.js chart (bar, line, pie, doughnut). Title, labels, data, and colour are all editable inline. Chart redraws live on every change.",                                                             category:"data",        type:"lib",  lib:"Chart.js",          files:["nodeView.js","commands.js"], toolbar:"📊 Insert Chart" },
+        { key:"graphBuilder",    name:"Graph Builder",         icon:"🔷", iconBg:"#eef2ff", desc:"Free-form interactive node-edge graph editor rendered on an SVG canvas. Three modes: select, add node, connect. Supports directional edges and custom labels.",                                                 category:"data",        type:"core", files:["nodeView.js","commands.js"],             toolbar:"🔷 Insert Graph Builder" },
+        { key:"diagram",         name:"Diagram",               icon:"🔷", iconBg:"#f0fdf4", desc:"Interactive node-edge diagram powered by Cytoscape.js. Supports multiple layout algorithms (preset, breadthfirst, circle, cose, grid). Drag nodes, add/delete edges.",                                        category:"data",        type:"lib",  lib:"Cytoscape.js",      files:["nodeView.js","commands.js"], toolbar:"🔷 Insert Diagram" },
+        { key:"map",             name:"Map",                   icon:"🗺️", iconBg:"#f0fdf4", desc:"Embeds an interactive Leaflet map with a configurable centre, zoom level, and height. Click to set a marker. Full pan/zoom in both edit and read modes.",                                                      category:"media",       type:"lib",  lib:"Leaflet.js",        files:["nodeView.js","commands.js"], toolbar:"🗺️ Insert Map" },
+        { key:"imageBlock",      name:"Image Block",           icon:"🖼",  iconBg:"#fff7ed", desc:"Upload images by file picker, URL paste, or drag-and-drop. Configurable alignment (left/centre/right) and width. Caption field. Images are stored on the server at /uploads/.",                              category:"media",       type:"core", files:["nodeView.js","commands.js"],             toolbar:"🖼 Insert Image" },
+        { key:"moleculeBlock",   name:"Molecule Block",        icon:"⚗️", iconBg:"#fdf4ff", desc:"Renders a 2D chemical structure from a SMILES string using SmilesDrawer (loaded from CDN). Includes a preset palette of common molecules and a live SVG preview while editing.",                              category:"science",     type:"lib",  lib:"SmilesDrawer",      files:["nodeView.js","commands.js"], toolbar:"⚗️ Insert Molecule" },
+        { key:"fhir",            name:"FHIR Resource",         icon:"🏥", iconBg:"#f0fdf4", desc:"Fetches and renders a FHIR R4 resource card from any FHIR server. Supported types: Patient, Observation, MedicationStatement. Configurable server URL and resource ID.",                                     category:"science",     type:"api",  files:["nodeView.js","commands.js"],             toolbar:"🏥 Insert FHIR Resource" },
+        { key:"kanban",          name:"Kanban Board",          icon:"🗂️", iconBg:"#fff7ed", desc:"Full Jira-like kanban board with colour-coded columns, priority badges, assignees, labels, and HTML5 drag-and-drop. Quick-add forms per column. Issues are stored in document attrs.",                        category:"productivity", type:"core", files:["nodeView.js","commands.js","issueEditor.js"], toolbar:"🗂️ Insert Kanban Board" },
+        { key:"form",            name:"Form",                  icon:"📋", iconBg:"#f0f9ff", desc:"Embeddable form with two modes: Edit (author adds/configures fields) and Fill (reader submits). Supported field types: text, email, number, tel, date, textarea, select.",                                   category:"productivity", type:"core", files:["nodeView.js","commands.js"],             toolbar:"📋 Insert Form" },
+        { key:"meetingNotes",    name:"Meeting Notes",         icon:"📅", iconBg:"#eef2ff", desc:"Structured meeting record with editable title, date/time, attendees (toggle present/absent), agenda checklist, action items table (owner, due date, status), and freeform notes.",                            category:"productivity", type:"core", files:["nodeView.js","commands.js"],             toolbar:"📅 Insert Meeting Notes" },
+        { key:"markdownBlock",   name:"Markdown Block",        icon:"𝐌↓", iconBg:"#f8fafc", desc:"Two-mode block: Edit (raw textarea with live word/line counter) and Preview (rendered HTML via marked.js). Raw markdown is stored in attrs and persists to Postgres.",                                        category:"productivity", type:"lib",  lib:"marked.js",         files:["nodeView.js","commands.js"], toolbar:"𝐌↓ Insert Markdown Block" },
+        { key:"riskMatrix",      name:"Risk Matrix",           icon:"🎯", iconBg:"#fff1f2", desc:"5×5 Likelihood × Impact risk assessment matrix. Each metric is a dot on the grid, colour-coded by severity (low/medium/high/critical). Editable metrics table with score calculation.",                      category:"data",        type:"core", files:["nodeView.js","commands.js"],             toolbar:"🎯 Insert Risk Matrix" },
+        { key:"customerBlock",   name:"Customer Block",        icon:"👤", iconBg:"#f0fdf4", desc:"Live CRM card connected to the Customer API. Three tabs: Overview (company details), Assets (linked equipment), Interactions (activity log). Auto-syncs on insert.",                                         category:"data",        type:"api",  files:["nodeView.js","commands.js"],             toolbar:"👤 Insert Customer Card" },
+        { key:"product",         name:"Product Configurator",  icon:"🛍️", iconBg:"#fdf4ff", desc:"Interactive product card with colour/size/material selectors, quantity picker, and live price calculation. All configuration stored in document attrs — no external API needed.",                              category:"productivity", type:"core", files:["nodeView.js","commands.js"],             toolbar:"🛍️ Insert Product" },
+        { key:"reply",           name:"Reply / Comment",       icon:"💬", iconBg:"#f0f9ff", desc:"Attributed comment block with author name (colour-coded), timestamp, and editable content. Uses contentDOM so ProseMirror manages the text natively. Good for review workflows.",                             category:"productivity", type:"core", files:["nodeView.js","commands.js"],             toolbar:"💬 Add Reply" },
+        { key:"assetGraph",      name:"Asset Graph",           icon:"🏭", iconBg:"#fff7ed", desc:"Interactive SVG asset graph for industrial equipment (cooling-water system CW-101). Nodes link to editor documents. Designed for ArborSpace / engineering use cases.",                                        category:"data",        type:"core", files:["nodeView.js","commands.js"],             toolbar:"🏭 Insert Asset Graph" },
+        { key:"carGraph",        name:"Car Drivetrain",        icon:"🚗", iconBg:"#f0fdf4", desc:"Interactive PHEV drivetrain architecture diagram. Nodes represent VCU, ICE, motors, battery, gearbox, and cooling loops. Each node can link to a separate editor document.",                                 category:"data",        type:"core", files:["nodeView.js","commands.js"],             toolbar:"🚗 Insert Car Drivetrain" },
+        { key:"subGraph",        name:"Sub-Graph",             icon:"🔗", iconBg:"#eef2ff", desc:"Generic data-driven component subgraph inserted when drilling down from an asset or car graph node. Auto-layouts using BFS-layered algorithm. Renders as interactive SVG.",                                   category:"data",        type:"core", files:["nodeView.js","commands.js"],             toolbar:"—" },
+        { key:"table",           name:"Table",                 icon:"⊞",  iconBg:"#f8fafc", desc:"Standard ProseMirror table with column resizing, hover highlights, header row toggle, and full keyboard navigation (Tab / Shift-Tab). Add/remove rows and columns via toolbar.",                              category:"layout",      type:"core", files:["commands.js","hoverPlugin.js"],          toolbar:"⊞ Insert Table" },
+        { key:"bomBlock",        name:"Bill of Materials",     icon:"⚙️", iconBg:"#fff7ed", desc:"Interactive BOM tree with quantity, unit, total and sensor-ID columns. Hierarchical nodes, inline editing. Supports IoT sensor assignment for live vibration monitoring.",                                     category:"data",        type:"core", files:["nodeView.js","commands.js"],             toolbar:"⚙️ Insert Bill of Materials" },
+        { key:"maintenanceBlock",name:"Maintenance Schedule",  icon:"🔧", iconBg:"#f0fdf4", desc:"Scheduled maintenance block with task list, due dates, status tracking and a live SVG dependency graph. Overlays IoT sensor rings when sensor IDs are assigned.",                                              category:"productivity", type:"core", files:["nodeView.js","commands.js"],             toolbar:"🔧 Insert Maintenance Schedule" },
+      ];
+
+      // ── State ────────────────────────────────────────────────────────────────
+
+      // extConfig: key → boolean (true = enabled). Defaults to all enabled.
+      let extConfig = {};
+      let filtered  = [...EXTENSIONS];
+      let dirty     = false;
+
+      const isEnabled = (key) => extConfig[key] !== false;
+
+      // ── API ──────────────────────────────────────────────────────────────────
+
+      async function loadConfig() {
+        try {
+          const res = await fetch("/api/extensions/config");
+          if (res.ok) extConfig = await res.json();
+        } catch { /* offline — default all enabled */ }
+      }
+
+      async function saveKey(key, enabled) {
+        try {
+          await fetch("/api/extensions/config", {
+            method:  "PUT",
+            headers: { "Content-Type": "application/json" },
+            body:    JSON.stringify({ [key]: enabled }),
+          });
+        } catch { /* ignore — local state already updated */ }
+      }
+
+      // ── Helpers ──────────────────────────────────────────────────────────────
+
+      function categoryLabel(c) {
+        return { legal:"Legal", data:"Data / Charts", media:"Media", productivity:"Productivity", science:"Science", versioning:"Versioning", layout:"Layout" }[c] || c;
+      }
+
+      function typeTag(ext) {
+        if (ext.type === "api") return `<span class="tag tag--api">API</span>`;
+        if (ext.type === "lib") return `<span class="tag tag--lib">${ext.lib || "3rd-party lib"}</span>`;
+        return `<span class="tag tag--core">Built-in</span>`;
+      }
+
+      // ── Render ───────────────────────────────────────────────────────────────
+
+      function renderStats() {
+        const total    = EXTENSIONS.length;
+        const enabled  = EXTENSIONS.filter(e => isEnabled(e.key)).length;
+        const disabled = total - enabled;
+        const byApi    = EXTENSIONS.filter(e => e.type === "api").length;
+        const byLib    = EXTENSIONS.filter(e => e.type === "lib").length;
+        const byCore   = EXTENSIONS.filter(e => e.type === "core").length;
+        const cats     = [...new Set(EXTENSIONS.map(e => e.category))].length;
+
+        document.getElementById("statsBar").innerHTML = `
+          <div class="stat-pill"><strong>${total}</strong> extensions</div>
+          <div class="stat-pill stat-enabled"><strong>${enabled}</strong> enabled</div>
+          ${disabled ? `<div class="stat-pill stat-disabled"><strong>${disabled}</strong> disabled</div>` : ""}
+          <div class="stat-pill">🗂️ <strong>${cats}</strong> categories</div>
+          <div class="stat-pill">🔗 <strong>${byApi}</strong> require an API</div>
+          <div class="stat-pill">📦 <strong>${byLib}</strong> use a 3rd-party lib</div>
+          <div class="stat-pill">⚙️ <strong>${byCore}</strong> built-in</div>
+        `;
+        document.getElementById("subtitle").textContent =
+          `${enabled} of ${total} extensions enabled`;
+      }
+
+      function renderGrid() {
+        const grid = document.getElementById("grid");
+        if (!filtered.length) {
+          grid.innerHTML = `
+            <div class="empty">
+              <div class="empty-icon">🔍</div>
+              <div class="empty-title">No extensions match your filters</div>
+            </div>`;
+          return;
+        }
+
+        grid.innerHTML = "";
+        filtered.forEach(ext => {
+          const on  = isEnabled(ext.key);
+          const card = document.createElement("div");
+          card.className = `card${on ? "" : " is-disabled"}`;
+          card.dataset.key = ext.key;
+
+          card.innerHTML = `
+            <div class="card-top">
+              <div class="card-icon" style="background:${ext.iconBg}">${ext.icon}</div>
+              <div class="card-header">
+                <div class="card-name">${ext.name}</div>
+                <div class="card-key">${ext.key}</div>
+              </div>
+              <label class="toggle" title="${on ? "Disable" : "Enable"} in toolbar">
+                <input type="checkbox" data-key="${ext.key}" ${on ? "checked" : ""}>
+                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              </label>
+            </div>
+            <div class="card-desc">${ext.desc}</div>
+            <div class="card-tags">
+              <span class="tag tag--category">${categoryLabel(ext.category)}</span>
+              ${typeTag(ext)}
+            </div>
+            <div class="card-files">
+              ${ext.files.map(f => `<span class="file-badge">${f}</span>`).join("")}
+              ${ext.toolbar !== "—" ? `<span class="file-badge" style="background:#eef2ff;border-color:#c7d2fe;color:#4338ca" title="Toolbar button">${ext.toolbar}</span>` : ""}
+            </div>`;
+
+          // Wire the toggle
+          const checkbox = card.querySelector(`input[data-key]`);
+          checkbox.addEventListener("change", async () => {
+            const newVal = checkbox.checked;
+            extConfig[ext.key] = newVal;
+
+            // Update card appearance immediately
+            card.classList.toggle("is-disabled", !newVal);
+            card.querySelector(".toggle").title = newVal ? "Disable in toolbar" : "Enable in toolbar";
+
+            // Show saving state briefly
+            const toggle = card.querySelector(".toggle");
+            toggle.classList.add("toggle-saving");
+
+            await saveKey(ext.key, newVal);
+
+            toggle.classList.remove("toggle-saving");
+
+            // Show reload notice & update stats
+            document.getElementById("reloadNotice").classList.add("visible");
+            dirty = true;
+            renderStats();
+          });
+
+          grid.appendChild(card);
+        });
+      }
+
+      function applyFilters() {
+        const q      = document.getElementById("searchInput").value.toLowerCase();
+        const cat    = document.getElementById("categoryFilter").value;
+        const type   = document.getElementById("libraryFilter").value;
+        const status = document.getElementById("statusFilter").value;
+
+        filtered = EXTENSIONS.filter(ext => {
+          if (q      && !ext.name.toLowerCase().includes(q) &&
+                        !ext.key.toLowerCase().includes(q)  &&
+                        !ext.desc.toLowerCase().includes(q)) return false;
+          if (cat    && ext.category !== cat)               return false;
+          if (type   && ext.type     !== type)              return false;
+          if (status === "enabled"  && !isEnabled(ext.key)) return false;
+          if (status === "disabled" &&  isEnabled(ext.key)) return false;
+          return true;
+        });
+
+        document.getElementById("subtitle").textContent =
+          filtered.length === EXTENSIONS.length
+            ? `${EXTENSIONS.filter(e => isEnabled(e.key)).length} of ${EXTENSIONS.length} extensions enabled`
+            : `${filtered.length} of ${EXTENSIONS.length} extensions shown`;
+
+        renderGrid();
+      }
+
+      // ── Boot ─────────────────────────────────────────────────────────────────
+
+      (async () => {
+        await loadConfig();
+        renderStats();
+        renderGrid();
+
+        // Set reload link href to editor with most-recent doc if available
+        try {
+          const r = await fetch("/api/docs?limit=1");
+          if (r.ok) {
+            const docs = await r.json();
+            if (docs[0]?.id) {
+              document.getElementById("reloadLink").href = `/?id=${docs[0].id}`;
+            } else {
+              document.getElementById("reloadLink").href = "/";
+            }
+          }
+        } catch {
+          document.getElementById("reloadLink").href = "/";
+        }
+
+        document.getElementById("searchInput").addEventListener("input",    applyFilters);
+        document.getElementById("categoryFilter").addEventListener("change", applyFilters);
+        document.getElementById("libraryFilter").addEventListener("change",  applyFilters);
+        document.getElementById("statusFilter").addEventListener("change",   applyFilters);
+
+        wireInspector();
+      })();
+
+      // ── API Inspector ─────────────────────────────────────────────────────────
+
+      function colorizeJson(obj) {
+        const json = JSON.stringify(obj, null, 2);
+        return json
+          .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+          .replace(/"([^"]+)"(\s*:)/g,   '<span class="json-key">"$1"</span>$2')
+          .replace(/:\s*"([^"]*)"/g,      ': <span class="json-str">"$1"</span>')
+          .replace(/:\s*(true)\b/g,       ': <span class="json-bool-t">true</span>')
+          .replace(/:\s*(false)\b/g,      ': <span class="json-bool-f">false</span>')
+          .replace(/:\s*(\d+\.?\d*)\b/g,  ': <span class="json-num">$1</span>')
+          .replace(/:\s*(null)\b/g,       ': <span class="json-null">null</span>');
+      }
+
+      function showResponse(containerEl, { ok, statusText, ms, body }) {
+        const cls = ok ? "ok" : "error";
+        const label = ok ? `✓ ${statusText}` : `✗ ${statusText}`;
+        const bodyHtml = typeof body === "object"
+          ? colorizeJson(body)
+          : `<span style="color:#f38ba8">${String(body)}</span>`;
+
+        containerEl.innerHTML = `
+          <div class="api-response-bar ${cls}">
+            ${label} <span style="opacity:.6;font-weight:400">${ms}ms</span>
+            <button class="api-copy-btn" title="Copy JSON">⎘ Copy</button>
+          </div>
+          <div class="api-response-body">${bodyHtml}</div>`;
+        containerEl.classList.add("visible");
+
+        containerEl.querySelector(".api-copy-btn").addEventListener("click", () => {
+          navigator.clipboard.writeText(JSON.stringify(body, null, 2))
+            .then(() => { containerEl.querySelector(".api-copy-btn").textContent = "✓ Copied"; });
+        });
+      }
+
+      function wireInspector() {
+        // Collapse / expand
+        document.getElementById("inspectorToggle").addEventListener("click", () => {
+          document.getElementById("apiInspector").classList.toggle("open");
+        });
+
+        // GET
+        document.getElementById("btnGet").addEventListener("click", async () => {
+          const btn = document.getElementById("btnGet");
+          btn.disabled = true; btn.textContent = "…";
+          const responseEl = document.getElementById("getResponse");
+          const t0 = Date.now();
+          try {
+            const res  = await fetch("/api/extensions/config");
+            const body = await res.json();
+            showResponse(responseEl, {
+              ok: res.ok, statusText: `HTTP ${res.status}`,
+              ms: Date.now() - t0, body,
+            });
+            // Sync toggles in the grid with the fresh data
+            extConfig = body;
+            renderStats();
+            renderGrid();
+          } catch (e) {
+            showResponse(responseEl, { ok: false, statusText: e.message, ms: Date.now() - t0, body: null });
+          } finally {
+            btn.disabled = false; btn.textContent = "▶ Run";
+          }
+        });
+
+        // PUT
+        document.getElementById("btnPut").addEventListener("click", async () => {
+          const btn = document.getElementById("btnPut");
+          const key = document.getElementById("putKey").value.trim();
+          const val = document.getElementById("putVal").value === "true";
+          if (!key) { document.getElementById("putKey").focus(); return; }
+
+          btn.disabled = true; btn.textContent = "…";
+          const responseEl = document.getElementById("putResponse");
+          const t0 = Date.now();
+          try {
+            const res  = await fetch("/api/extensions/config", {
+              method:  "PUT",
+              headers: { "Content-Type": "application/json" },
+              body:    JSON.stringify({ [key]: val }),
+            });
+            const body = await res.json().catch(() => ({}));
+            showResponse(responseEl, {
+              ok: res.ok, statusText: `HTTP ${res.status}`,
+              ms: Date.now() - t0, body,
+            });
+            // Reflect change in local state + grid
+            extConfig[key] = val;
+            document.getElementById("reloadNotice").classList.add("visible");
+            renderStats();
+            renderGrid();
+          } catch (e) {
+            showResponse(responseEl, { ok: false, statusText: e.message, ms: Date.now() - t0, body: null });
+          } finally {
+            btn.disabled = false; btn.textContent = "▶ Send";
+          }
+        });
+      }
+    </script>
+  </body>
+</html>

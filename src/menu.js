@@ -32,6 +32,9 @@ import { insertClauseBlock }    from "./extensions/clauseBlock/commands.js";
 import { insertPartyBlock }     from "./extensions/partyBlock/commands.js";
 import { insertMatterBlock }      from "./extensions/matterBlock/commands.js";
 import { insertVersionTimeline }  from "./extensions/versionTimeline/commands.js";
+import { insertMermaidBlock }      from "./extensions/mermaidBlock/commands.js";
+import { insertBomBlock }          from "./extensions/bomBlock/commands.js";
+import { insertMaintenanceBlock }  from "./extensions/maintenanceBlock/commands.js";
 import {
   insertTable,
   addRowAfter, addRowBefore, deleteRow,
@@ -105,14 +108,20 @@ function separator() {
 // Plugin
 // ------------------------------------------------------------------
 
-export function menuPlugin(containerSelector = "#toolbar") {
+/**
+ * @param {string} containerSelector
+ * @param {Record<string,boolean>|null} extConfig  null = all enabled;
+ *   object = only keys with value !== false are shown (missing keys default to enabled)
+ */
+export function menuPlugin(containerSelector = "#toolbar", extConfig = null) {
   return new Plugin({
     view(editorView) {
       const container = document.querySelector(containerSelector);
       if (!container) return {};
 
       const { marks, nodes } = schema;
-      const run = (cmd) => cmd(editorView.state, editorView.dispatch, editorView);
+      const run  = (cmd) => cmd(editorView.state, editorView.dispatch, editorView);
+      const isOn = (key) => extConfig === null || extConfig[key] !== false;
 
       // ── Link popup ─────────────────────────────────────────────
       // A small floating panel anchored below the link button.
@@ -204,49 +213,65 @@ export function menuPlugin(containerSelector = "#toolbar") {
         openPopup(linkBtn);
       });
 
+      // ── Stored refs for mark-active tracking ──────────────────
+      const boldBtn   = button("B",   "Bold (Ctrl+B)",        () => run(toggleMark(marks.strong)));
+      const italicBtn = button("I",   "Italic (Ctrl+I)",      () => run(toggleMark(marks.em)));
+      const codeBtn   = button("</>", "Inline Code (Ctrl+`)", () => run(toggleMark(marks.code)));
+
+      // ── Extension buttons (conditionally shown) ────────────────
+      const extGroup1 = [
+        isOn("graph")    && button("📊",  "Insert Chart",         () => run(insertGraph())),
+        isOn("map")      && button("🗺️", "Insert Map",            () => run(insertMap())),
+        isOn("diagram")  && button("🔷",  "Insert Diagram",       () => run(insertDiagram())),
+        isOn("product")  && button("🛍️", "Insert Product",        () => run(insertProduct())),
+        isOn("table")    && button("⊞",   "Insert Table",         () => run(insertTable(3, 3))),
+        isOn("fhir")     && button("🏥",  "Insert FHIR Resource", () => run(insertFhir())),
+        isOn("form")     && button("📋",  "Insert Form",          () => run(insertForm())),
+        isOn("kanban")   && button("🗂️", "Insert Kanban Board",   () => run(insertKanban())),
+      ].filter(Boolean);
+
+      const extGroup2 = [
+        isOn("assetGraph")       && button("🏭",  "Insert Asset Graph",          () => run(insertAssetGraph())),
+        isOn("carGraph")         && button("🚗",  "Insert Car Drivetrain",       () => run(insertCarGraph())),
+        isOn("meetingNotes")     && button("📅",  "Insert Meeting Notes",        () => run(insertMeetingNotes())),
+        isOn("markdownBlock")    && button("𝐌↓",  "Insert Markdown Block",       () => run(insertMarkdownBlock())),
+        isOn("graphBuilder")     && button("🔷",  "Insert Graph Builder",        () => run(insertGraphBuilder())),
+        isOn("imageBlock")       && button("🖼",   "Insert Image",               () => run(insertImageBlock())),
+        isOn("moleculeBlock")    && button("⚗️",  "Insert Molecule",             () => run(insertMoleculeBlock())),
+        isOn("riskMatrix")       && button("🎯",  "Insert Risk Matrix",          () => run(insertRiskMatrix())),
+        isOn("customerBlock")    && button("👤",  "Insert Customer Card",        () => run(insertCustomerBlock())),
+        isOn("clauseBlock")      && button("📋",  "Insert Clause Block",         () => run(insertClauseBlock())),
+        isOn("partyBlock")       && button("🏢",  "Insert Party Block",          () => run(insertPartyBlock())),
+        isOn("matterBlock")      && button("📁",  "Insert Matter Block",         () => run(insertMatterBlock())),
+        isOn("versionTimeline")  && button("🕓",  "Insert Version Timeline",     () => run(insertVersionTimeline())),
+        isOn("bomBlock")         && button("⚙️",  "Insert Bill of Materials",    () => run(insertBomBlock())),
+        isOn("maintenanceBlock") && button("🔧",  "Insert Maintenance Schedule", () => run(insertMaintenanceBlock())),
+        isOn("mermaidBlock")     && button("🔀",  "Insert Mermaid Diagram",      () => run(insertMermaidBlock())),
+        isOn("reply")            && button("💬",  "Add Reply",                   () => run(insertReply())),
+      ].filter(Boolean);
+
       // ── Toolbar items ──────────────────────────────────────────
       const items = [
-        button("↩",     "Undo (Ctrl+Z)",        () => run(undo)),
-        button("↪",     "Redo (Ctrl+Y)",         () => run(redo)),
+        button("↩",      "Undo (Ctrl+Z)",   () => run(undo)),
+        button("↪",      "Redo (Ctrl+Y)",   () => run(redo)),
         separator(),
-        button("B",     "Bold (Ctrl+B)",          () => run(toggleMark(marks.strong))),
-        button("I",     "Italic (Ctrl+I)",        () => run(toggleMark(marks.em))),
-        button("</>",   "Inline Code (Ctrl+`)",   () => run(toggleMark(marks.code))),
-        linkBtn,                                  // ← link button (index 6 in querySelectorAll)
+        boldBtn,
+        italicBtn,
+        codeBtn,
+        linkBtn,
         separator(),
-        button("¶",     "Paragraph",              () => run(setBlockType(nodes.paragraph))),
-        button("H1",    "Heading 1",              () => run(setBlockType(nodes.heading, { level: 1 }))),
-        button("H2",    "Heading 2",              () => run(setBlockType(nodes.heading, { level: 2 }))),
-        button("H3",    "Heading 3",              () => run(setBlockType(nodes.heading, { level: 3 }))),
+        button("¶",       "Paragraph",      () => run(setBlockType(nodes.paragraph))),
+        button("H1",      "Heading 1",      () => run(setBlockType(nodes.heading, { level: 1 }))),
+        button("H2",      "Heading 2",      () => run(setBlockType(nodes.heading, { level: 2 }))),
+        button("H3",      "Heading 3",      () => run(setBlockType(nodes.heading, { level: 3 }))),
         separator(),
-        button("• List","Bullet List",            () => run(wrapInList(nodes.bullet_list))),
-        button("1. List","Ordered List",          () => run(wrapInList(nodes.ordered_list))),
+        button("• List",  "Bullet List",    () => run(wrapInList(nodes.bullet_list))),
+        button("1. List", "Ordered List",   () => run(wrapInList(nodes.ordered_list))),
         separator(),
-        button("❝",     "Blockquote",             () => run(wrapIn(nodes.blockquote))),
-        separator(),
-        button("📊",    "Insert Chart",           () => run(insertGraph())),
-        button("🗺️",   "Insert Map",             () => run(insertMap())),
-        button("🔷",    "Insert Diagram",         () => run(insertDiagram())),
-        button("🛍️",   "Insert Product",         () => run(insertProduct())),
-        button("⊞",    "Insert Table",            () => run(insertTable(3, 3))),
-        button("🏥",   "Insert FHIR Resource",    () => run(insertFhir())),
-        button("📋",   "Insert Form",             () => run(insertForm())),
-        button("🗂️",  "Insert Kanban Board",     () => run(insertKanban())),
-        separator(),
-        button("🏭",   "Insert Asset Graph",       () => run(insertAssetGraph())),
-        button("🚗",   "Insert Car Drivetrain",    () => run(insertCarGraph())),
-        button("📅",   "Insert Meeting Notes",     () => run(insertMeetingNotes())),
-        button("𝐌↓",   "Insert Markdown Block",    () => run(insertMarkdownBlock())),
-        button("🔷",   "Insert Graph Builder",     () => run(insertGraphBuilder())),
-        button("🖼",   "Insert Image",             () => run(insertImageBlock())),
-        button("⚗️",  "Insert Molecule",           () => run(insertMoleculeBlock())),
-        button("🎯",  "Insert Risk Matrix",        () => run(insertRiskMatrix())),
-        button("👤",  "Insert Customer Card",      () => run(insertCustomerBlock())),
-        button("📋",  "Insert Clause Block",       () => run(insertClauseBlock())),
-        button("🏢",  "Insert Party Block",        () => run(insertPartyBlock())),
-        button("📁",  "Insert Matter Block",           () => run(insertMatterBlock())),
-        button("🕓",  "Insert Version Timeline",      () => run(insertVersionTimeline())),
-        button("💬",   "Add Reply",               () => run(insertReply())),
+        button("❝",       "Blockquote",     () => run(wrapIn(nodes.blockquote))),
+        ...(extGroup1.length                    ? [separator(), ...extGroup1]  : []),
+        ...(extGroup1.length && extGroup2.length ? [separator()]               : []),
+        ...extGroup2,
         (() => {
           // User identity pill — shows current user, click to change
           const pill = document.createElement("div");
@@ -329,15 +354,13 @@ export function menuPlugin(containerSelector = "#toolbar") {
       return {
         update(view) {
           const { from, $from, to, empty } = view.state.selection;
-          const btns = container.querySelectorAll("button");
 
-          // buttons[2]=B  buttons[3]=I  buttons[4]=</>  buttons[5]=🔗
-          const markButtons = [
-            { btn: btns[2], mark: marks.strong },
-            { btn: btns[3], mark: marks.em },
-            { btn: btns[4], mark: marks.code },
-          ];
-          markButtons.forEach(({ btn, mark }) => {
+          // Use stored button refs (safe regardless of which ext buttons are visible)
+          [
+            { btn: boldBtn,   mark: marks.strong },
+            { btn: italicBtn, mark: marks.em },
+            { btn: codeBtn,   mark: marks.code },
+          ].forEach(({ btn, mark }) => {
             const active = empty
               ? mark.isInSet(view.state.storedMarks || $from.marks())
               : view.state.doc.rangeHasMark(from, to, mark);
@@ -345,8 +368,7 @@ export function menuPlugin(containerSelector = "#toolbar") {
           });
 
           // Link button: active when cursor is inside a link
-          const linkActive = !!getActiveLinkMark(view.state);
-          btns[5].classList.toggle("active", linkActive);
+          linkBtn.classList.toggle("active", !!getActiveLinkMark(view.state));
 
           // Show/hide contextual table toolbar
           tableBar.style.display = isInTable(view.state) ? "flex" : "none";

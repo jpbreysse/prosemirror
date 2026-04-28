@@ -1,0 +1,378 @@
+/* ── Connector Registry UI ──────────────────────────────────────────────────── */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 14px;
+  background: #f8f8f9;
+  color: #18181b;
+}
+
+#conn-app {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Nav ──────────────────────────────────────────────────────────────────── */
+
+#conn-nav {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 24px;
+  height: 56px;
+  background: #fff;
+  border-bottom: 1px solid #e4e4e7;
+}
+
+.conn-back {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #6b7280;
+  text-decoration: none;
+  font-size: 13px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  transition: background .15s, color .15s;
+}
+.conn-back:hover { background: #f4f4f5; color: #18181b; }
+
+.conn-nav-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  font-size: 15px;
+  flex: 1;
+}
+
+.conn-nav-count {
+  font-size: 12px;
+  background: #f4f4f5;
+  color: #52525b;
+  border-radius: 20px;
+  padding: 2px 10px;
+  font-weight: 500;
+}
+
+.conn-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #18181b;
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+.conn-add-btn:hover { background: #3f3f46; }
+
+/* ── Main ──────────────────────────────────────────────────────────────────── */
+
+#conn-main {
+  flex: 1;
+  padding: 24px;
+  max-width: 960px;
+  margin: 0 auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── Connector table ───────────────────────────────────────────────────────── */
+
+.conn-table-wrap {
+  background: #fff;
+  border: 1.5px solid #e4e4e7;
+  border-radius: 12px;
+  overflow-x: auto;
+}
+
+.conn-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.conn-table thead tr {
+  background: #f9f9fb;
+  border-bottom: 1px solid #e4e4e7;
+}
+
+.conn-table th {
+  text-align: left;
+  padding: 10px 16px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: #71717a;
+  white-space: nowrap;
+}
+
+.conn-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f4f4f5;
+  vertical-align: middle;
+}
+
+.conn-table tbody tr:last-child td { border-bottom: none; }
+.conn-table tbody tr:hover td { background: #fafafa; }
+
+.conn-name {
+  font-family: ui-monospace, "Cascadia Code", monospace;
+  font-size: 12px;
+  background: #f4f4f5;
+  color: #374151;
+  border-radius: 5px;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+
+.conn-label {
+  font-weight: 600;
+  color: #18181b;
+}
+
+.conn-url {
+  font-size: 12px;
+  color: #6b7280;
+  font-family: ui-monospace, monospace;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.conn-auth-badge {
+  display: inline-block;
+  font-size: 11px;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-weight: 500;
+  background: #f0f9ff;
+  color: #0284c7;
+}
+.conn-auth-badge--bearer { background: #fdf4ff; color: #9333ea; }
+.conn-auth-badge--basic  { background: #fff7ed; color: #c2410c; }
+.conn-auth-badge--none   { background: #f4f4f5; color: #71717a; }
+
+.conn-status {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.conn-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+.conn-status--enabled .conn-status-dot  { background: #22c55e; }
+.conn-status--disabled .conn-status-dot { background: #d1d5db; }
+.conn-status--enabled  { color: #16a34a; }
+.conn-status--disabled { color: #9ca3af; }
+
+.conn-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+  opacity: 0;
+  transition: opacity .15s;
+}
+.conn-table tbody tr:hover .conn-actions { opacity: 1; }
+
+.conn-btn {
+  border: 1.5px solid #e4e4e7;
+  border-radius: 6px;
+  background: #fff;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  color: #374151;
+  transition: background .1s, border-color .1s;
+}
+.conn-btn:hover { background: #f4f4f5; }
+.conn-btn--danger { color: #dc2626; border-color: #fecaca; }
+.conn-btn--danger:hover { background: #fff7f7; }
+.conn-btn--test { color: #0284c7; border-color: #bae6fd; }
+.conn-btn--test:hover { background: #f0f9ff; }
+
+/* ── Empty state ───────────────────────────────────────────────────────────── */
+
+.conn-empty {
+  padding: 60px 24px;
+  text-align: center;
+  color: #9ca3af;
+}
+.conn-empty strong { color: #374151; display: block; margin-bottom: 6px; font-size: 15px; }
+
+/* ── Add / Edit form ───────────────────────────────────────────────────────── */
+
+.conn-form-wrap {
+  background: #fff;
+  border: 1.5px solid #6366f1;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.conn-form-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  background: #eef2ff;
+  border-bottom: 1px solid #c7d2fe;
+  font-weight: 700;
+  font-size: 14px;
+  color: #3730a3;
+}
+
+.conn-form-close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: #6366f1;
+  line-height: 1;
+  padding: 0 4px;
+}
+
+.conn-form {
+  padding: 18px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.conn-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.conn-form-field--full { grid-column: 1 / -1; }
+
+.conn-form-field label {
+  font-size: 11.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: #71717a;
+}
+
+.conn-form-field input,
+.conn-form-field select {
+  border: 1.5px solid #e4e4e7;
+  border-radius: 7px;
+  padding: 7px 10px;
+  font-size: 13px;
+  outline: none;
+  transition: border-color .15s;
+  font-family: inherit;
+  background: #fff;
+}
+.conn-form-field input:focus,
+.conn-form-field select:focus { border-color: #6366f1; }
+.conn-form-field input[type="password"] { font-family: monospace; letter-spacing: .1em; }
+
+.conn-form-hint {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+.conn-form-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.conn-form-cancel {
+  background: #f4f4f5;
+  border: none;
+  border-radius: 7px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  color: #374151;
+}
+.conn-form-cancel:hover { background: #e4e4e7; }
+
+.conn-form-save {
+  background: #6366f1;
+  border: none;
+  border-radius: 7px;
+  padding: 8px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  color: #fff;
+  transition: background .15s;
+}
+.conn-form-save:hover { background: #4f46e5; }
+
+/* ── Test result ───────────────────────────────────────────────────────────── */
+
+.conn-test-result {
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.conn-test-result--ok      { background: #dcfce7; color: #15803d; }
+.conn-test-result--error   { background: #fee2e2; color: #dc2626; }
+.conn-test-result--loading { background: #f4f4f5; color: #71717a; }
+
+/* ── Endpoint helper ───────────────────────────────────────────────────────── */
+
+.conn-endpoint-box {
+  background: #f9f9fb;
+  border: 1px solid #e4e4e7;
+  border-radius: 10px;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.conn-endpoint-title {
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: #71717a;
+}
+.conn-endpoint-url {
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  color: #3b82f6;
+  background: #eff6ff;
+  border-radius: 5px;
+  padding: 5px 10px;
+}
+
+@media (max-width: 640px) {
+  .conn-form { grid-template-columns: 1fr; }
+  .conn-form-field--full { grid-column: 1; }
+  #conn-nav { flex-wrap: wrap; height: auto; padding: 10px 16px; gap: 10px; }
+  #conn-main { padding: 12px; }
+}

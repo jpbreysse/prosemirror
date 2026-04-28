@@ -37,7 +37,11 @@ import { RiskMatrixNodeView }    from "./extensions/riskMatrix/nodeView.js";
 import { CustomerBlockNodeView } from "./extensions/customerBlock/nodeView.js";
 import { ClauseBlockNodeView }   from "./extensions/clauseBlock/nodeView.js";
 import { PartyBlockNodeView }    from "./extensions/partyBlock/nodeView.js";
-import { MatterBlockNodeView }   from "./extensions/matterBlock/nodeView.js";
+import { MatterBlockNodeView }        from "./extensions/matterBlock/nodeView.js";
+import { VersionTimelineNodeView }    from "./extensions/versionTimeline/nodeView.js";
+import { MermaidBlockNodeView }       from "./extensions/mermaidBlock/nodeView.js";
+import { BomBlockNodeView }           from "./extensions/bomBlock/nodeView.js";
+import { MaintenanceBlockNodeView }   from "./extensions/maintenanceBlock/nodeView.js";
 
 // ── Bootstrap ─────────────────────────────────────────────────────────────────
 
@@ -108,7 +112,11 @@ async function init() {
       customerBlock: (node, view, getPos) => new CustomerBlockNodeView(node, view, getPos),
       clauseBlock:   (node, view, getPos) => new ClauseBlockNodeView(node, view, getPos),
       partyBlock:    (node, view, getPos) => new PartyBlockNodeView(node, view, getPos),
-      matterBlock:   (node, view, getPos) => new MatterBlockNodeView(node, view, getPos),
+      matterBlock:      (node, view, getPos) => new MatterBlockNodeView(node, view, getPos),
+      versionTimeline:  (node, view, getPos) => new VersionTimelineNodeView(node, view, getPos),
+      maintenanceBlock: (node, view, getPos) => new MaintenanceBlockNodeView(node, view, getPos),
+      bomBlock:         (node, view, getPos) => new BomBlockNodeView(node, view, getPos),
+      mermaidBlock:     (node, view, getPos) => new MermaidBlockNodeView(node, view, getPos),
     },
 
     // Suppress the default editable cursor style

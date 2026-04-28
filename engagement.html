@@ -1,0 +1,1291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Lummus Phase 2 — Workshop Programme</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f4f4f5;
+      color: #18181b;
+      min-height: 100dvh;
+    }
+
+    /* ── Nav ── */
+    .top-nav {
+      position: sticky; top: 0; z-index: 20;
+      background: #fff;
+      border-bottom: 1px solid #e4e4e7;
+      padding: 0 24px;
+      height: 56px;
+      display: flex; align-items: center; gap: 16px;
+    }
+    .nav-logo {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: linear-gradient(135deg, #6366f1, #818cf8);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .nav-title {
+      font-size: 15px; font-weight: 700; color: #18181b;
+      display: flex; align-items: center; gap: 8px;
+      flex: 1;
+    }
+    .nav-client {
+      font-size: 12px; font-weight: 500;
+      background: #eef2ff; color: #4338ca;
+      border-radius: 20px; padding: 2px 10px;
+    }
+    .nav-phase {
+      font-size: 12px; font-weight: 500;
+      background: #f4f4f5; color: #52525b;
+      border-radius: 20px; padding: 2px 10px;
+    }
+    .nav-back {
+      display: flex; align-items: center; gap: 4px;
+      color: #6b7280; text-decoration: none; font-size: 13px;
+      padding: 5px 8px; border-radius: 6px;
+      transition: background .15s;
+    }
+    .nav-back:hover { background: #f4f4f5; color: #18181b; }
+
+    /* ── Tabs ── */
+    .tabs-bar {
+      background: #fff;
+      border-bottom: 1px solid #e4e4e7;
+      padding: 0 24px;
+      display: flex; gap: 0;
+    }
+    .tab-btn {
+      padding: 12px 20px;
+      font-size: 13px; font-weight: 500;
+      border: none; background: none; cursor: pointer;
+      color: #6b7280;
+      border-bottom: 2px solid transparent;
+      transition: color .15s, border-color .15s;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .tab-btn.active { color: #6366f1; border-bottom-color: #6366f1; }
+    .tab-btn:hover:not(.active) { color: #18181b; }
+    .tab-count {
+      font-size: 11px; background: #f4f4f5; color: #52525b;
+      border-radius: 10px; padding: 1px 7px; font-weight: 600;
+    }
+    .tab-btn.active .tab-count { background: #eef2ff; color: #6366f1; }
+
+    /* ── Layout ── */
+    .page { max-width: 1100px; margin: 0 auto; padding: 24px; }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* ── Workshop grid ── */
+    .ws-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 700px) { .ws-layout { grid-template-columns: 1fr; } }
+
+    .ws-card {
+      background: #fff;
+      border: 1.5px solid #e4e4e7;
+      border-radius: 14px;
+      padding: 20px 22px;
+      cursor: pointer;
+      transition: border-color .15s, box-shadow .15s, transform .1s;
+      position: relative;
+      overflow: hidden;
+    }
+    .ws-card:hover { border-color: #a5b4fc; box-shadow: 0 4px 16px rgba(99,102,241,.1); transform: translateY(-1px); }
+    .ws-card.selected { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,.12); }
+
+    .ws-card-top { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 12px; }
+    .ws-badge {
+      font-size: 12px; font-weight: 800;
+      width: 38px; height: 38px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .ws-badge.w1 { background: #eef2ff; color: #4338ca; }
+    .ws-badge.w2 { background: #f0fdf4; color: #15803d; }
+    .ws-badge.w3 { background: #fff7ed; color: #c2410c; }
+    .ws-badge.w4 { background: #fdf4ff; color: #7e22ce; }
+
+    .ws-card-title { font-size: 14px; font-weight: 700; color: #18181b; line-height: 1.35; }
+    .ws-card-week  { font-size: 12px; color: #9ca3af; margin-top: 3px; }
+
+    .ws-status {
+      position: absolute; top: 20px; right: 20px;
+      font-size: 11px; font-weight: 600; border-radius: 20px; padding: 3px 10px;
+    }
+    .ws-status.upcoming    { background: #f4f4f5; color: #6b7280; }
+    .ws-status.in_progress { background: #fef3c7; color: #b45309; }
+    .ws-status.completed   { background: #dcfce7; color: #15803d; }
+
+    .ws-objective {
+      font-size: 12.5px; color: #52525b; line-height: 1.6;
+      margin-bottom: 14px;
+    }
+
+    .ws-footer {
+      display: flex; align-items: center; gap: 10px;
+      padding-top: 12px;
+      border-top: 1px solid #f4f4f5;
+      flex-wrap: wrap;
+    }
+    .ws-meta-chip {
+      font-size: 11.5px; color: #6b7280;
+      display: flex; align-items: center; gap: 4px;
+    }
+    .ws-meta-chip svg { opacity: .5; }
+
+    .ws-status-btn {
+      margin-left: auto;
+      font-size: 11px; font-weight: 600;
+      border: 1px solid #e4e4e7; border-radius: 6px;
+      padding: 4px 10px; background: #fff; cursor: pointer; color: #374151;
+      transition: background .12s;
+    }
+    .ws-status-btn:hover { background: #f4f4f5; }
+
+    /* ── Workshop detail panel ── */
+    .ws-detail {
+      margin-top: 0;
+      background: #fff;
+      border: 1.5px solid #6366f1;
+      border-radius: 14px;
+      overflow: hidden;
+      grid-column: 1 / -1;
+      animation: slideDown .18s ease;
+    }
+    @keyframes slideDown { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+
+    .ws-detail-hdr {
+      background: #eef2ff;
+      border-bottom: 1px solid #c7d2fe;
+      padding: 14px 22px;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 8px;
+    }
+    .ws-detail-hdr-title { font-size: 14px; font-weight: 700; color: #3730a3; }
+    .ws-detail-hdr-close {
+      background: none; border: none; cursor: pointer;
+      font-size: 18px; color: #6366f1; line-height: 1; padding: 0 4px;
+    }
+
+    .ws-detail-body { display: grid; grid-template-columns: 260px 1fr; }
+    @media (max-width: 650px) { .ws-detail-body { grid-template-columns: 1fr; } }
+
+    /* Participants side */
+    .ws-participants {
+      padding: 18px 20px;
+      border-right: 1px solid #e4e4e7;
+    }
+    .ws-section-label {
+      font-size: 10.5px; font-weight: 700; letter-spacing: .08em;
+      text-transform: uppercase; color: #9ca3af;
+      margin-bottom: 12px;
+    }
+    .participant-row {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid #f4f4f5;
+    }
+    .participant-row:last-child { border-bottom: none; }
+    .participant-avatar {
+      width: 30px; height: 30px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700; flex-shrink: 0;
+    }
+    .participant-avatar.external { background: #eef2ff; color: #4338ca; }
+    .participant-avatar.lummus   { background: #f0fdf4; color: #15803d; }
+    .participant-name { font-size: 12.5px; font-weight: 600; color: #18181b; }
+    .participant-role { font-size: 11px; color: #9ca3af; margin-top: 1px; }
+    .participant-effort {
+      margin-left: auto; flex-shrink: 0;
+      font-size: 11px; font-weight: 600;
+      background: #f4f4f5; color: #52525b;
+      border-radius: 4px; padding: 2px 6px;
+    }
+
+    /* Questions side */
+    .ws-questions { padding: 18px 22px; }
+    .question-list { list-style: none; display: flex; flex-direction: column; gap: 0; }
+    .question-item {
+      display: flex; gap: 12px; align-items: flex-start;
+      padding: 10px 0;
+      border-bottom: 1px solid #f9f9fb;
+    }
+    .question-item:last-child { border-bottom: none; }
+    .q-num {
+      font-size: 11px; font-weight: 700; color: #a5b4fc;
+      background: #eef2ff; border-radius: 5px;
+      min-width: 24px; height: 22px; display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: 1px;
+    }
+    .q-text { font-size: 13px; color: #374151; line-height: 1.55; }
+    .q-block-label {
+      display: inline-block; font-size: 10px; font-weight: 700;
+      letter-spacing: .06em; text-transform: uppercase;
+      background: #fdf4ff; color: #7e22ce;
+      border-radius: 4px; padding: 1px 6px; margin-bottom: 6px;
+    }
+
+    /* ── Team tab ── */
+    .team-table-wrap {
+      background: #fff;
+      border: 1.5px solid #e4e4e7;
+      border-radius: 12px;
+      overflow-x: auto;
+    }
+    .team-table {
+      width: 100%; border-collapse: collapse; font-size: 13px;
+    }
+    .team-table thead tr { background: #f9f9fb; border-bottom: 1px solid #e4e4e7; }
+    .team-table th {
+      text-align: left; padding: 10px 16px;
+      font-size: 10.5px; font-weight: 700; letter-spacing: .06em;
+      text-transform: uppercase; color: #9ca3af; white-space: nowrap;
+    }
+    .team-table td { padding: 12px 16px; border-bottom: 1px solid #f4f4f5; vertical-align: middle; }
+    .team-table tbody tr:last-child td { border-bottom: none; }
+    .team-table tbody tr:hover td { background: #fafafa; }
+
+    .type-badge {
+      display: inline-block; font-size: 10.5px; font-weight: 600;
+      border-radius: 4px; padding: 2px 8px;
+    }
+    .type-badge.external { background: #eef2ff; color: #4338ca; }
+    .type-badge.lummus   { background: #f0fdf4; color: #15803d; }
+
+    .ws-tag {
+      display: inline-block; font-size: 10.5px; font-weight: 700;
+      border-radius: 4px; padding: 1px 6px; margin: 1px;
+    }
+    .ws-tag.w1 { background: #eef2ff; color: #4338ca; }
+    .ws-tag.w2 { background: #f0fdf4; color: #15803d; }
+    .ws-tag.w3 { background: #fff7ed; color: #c2410c; }
+    .ws-tag.w4 { background: #fdf4ff; color: #7e22ce; }
+
+    .effort-chip {
+      font-size: 12px; font-weight: 600;
+      font-family: ui-monospace, monospace;
+      color: #374151;
+    }
+
+    /* ── Effort breakdown on workshop cards ── */
+    .ws-effort-row {
+      display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px;
+    }
+    .effort-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 11px; font-weight: 600; border-radius: 5px; padding: 2px 8px;
+    }
+    .effort-badge.ext { background: #eef2ff; color: #4338ca; }
+    .effort-badge.lci { background: #f0fdf4; color: #15803d; }
+
+    /* ── Team inline editing ── */
+    .person-name { font-weight: 600; color: #18181b; }
+    .person-role { font-size: 11px; color: #9ca3af; }
+
+    .editable-cell {
+      cursor: pointer; border-radius: 4px;
+      padding: 1px 4px; margin: -1px -4px;
+      transition: background .12s;
+    }
+    .editable-cell:hover { background: #f0f0fe; }
+
+    .cell-input {
+      font-size: 13px; font-family: inherit; color: #18181b;
+      border: 1.5px solid #6366f1; border-radius: 5px;
+      padding: 3px 7px; outline: none; background: #fafafe;
+      width: 100%; min-width: 80px;
+    }
+    .cell-input.small { font-size: 12px; width: 70px; }
+    .cell-textarea {
+      font-size: 12px; font-family: inherit; color: #6b7280;
+      border: 1.5px solid #6366f1; border-radius: 5px;
+      padding: 3px 7px; outline: none; background: #fafafe;
+      width: 100%; resize: vertical; min-height: 40px;
+    }
+
+    .ws-checkbox-wrap {
+      display: flex; gap: 4px; flex-wrap: wrap;
+    }
+    .ws-check-label {
+      display: inline-flex; align-items: center; gap: 3px;
+      font-size: 11px; font-weight: 700; cursor: pointer;
+      border-radius: 4px; padding: 2px 6px; border: 1.5px solid transparent;
+      transition: all .12s;
+    }
+    .ws-check-label input { display: none; }
+    .ws-check-label.w1 { background: #eef2ff; color: #4338ca; }
+    .ws-check-label.w2 { background: #f0fdf4; color: #15803d; }
+    .ws-check-label.w3 { background: #fff7ed; color: #c2410c; }
+    .ws-check-label.w4 { background: #fdf4ff; color: #7e22ce; }
+    .ws-check-label:not(.checked) { opacity: .35; }
+    .ws-check-label.checked { opacity: 1; }
+
+    .type-toggle {
+      cursor: pointer; user-select: none;
+    }
+
+    /* Delete / add person row */
+    .row-delete-btn {
+      background: none; border: none; cursor: pointer;
+      color: #d1d5db; font-size: 13px; padding: 3px 6px;
+      border-radius: 4px; opacity: 0; transition: opacity .15s, color .12s;
+    }
+    tr:hover .row-delete-btn { opacity: 1; }
+    .row-delete-btn:hover { color: #dc2626; background: #fee2e2; }
+
+    .add-person-row td { padding: 10px 16px; background: #fafafa; border-top: 1px dashed #e4e4e7; }
+    .add-person-form { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .add-person-input {
+      font-size: 13px; font-family: inherit;
+      border: 1.5px solid #e4e4e7; border-radius: 6px;
+      padding: 6px 10px; outline: none; background: #fff;
+      transition: border-color .15s;
+    }
+    .add-person-input:focus { border-color: #6366f1; }
+    .add-person-input.sm { width: 130px; }
+    .add-person-btn {
+      font-size: 12px; font-weight: 600;
+      background: #6366f1; color: #fff;
+      border: none; border-radius: 6px;
+      padding: 6px 14px; cursor: pointer; white-space: nowrap;
+    }
+    .add-person-btn:hover { background: #4f46e5; }
+    .add-person-btn:disabled { background: #a5b4fc; }
+
+    /* ── Questions tab ── */
+    .q-filter-bar {
+      display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;
+    }
+    .q-filter-btn {
+      font-size: 12px; font-weight: 600; border-radius: 20px;
+      padding: 5px 14px; border: 1.5px solid #e4e4e7;
+      background: #fff; cursor: pointer; color: #6b7280;
+      transition: all .12s;
+    }
+    .q-filter-btn.active { color: #fff; border-color: transparent; }
+    .q-filter-btn.active.all { background: #6366f1; }
+    .q-filter-btn.active.w1 { background: #4338ca; }
+    .q-filter-btn.active.w2 { background: #15803d; }
+    .q-filter-btn.active.w3 { background: #c2410c; }
+    .q-filter-btn.active.w4 { background: #7e22ce; }
+
+    .q-search {
+      flex: 1; min-width: 200px;
+      border: 1.5px solid #e4e4e7; border-radius: 8px;
+      padding: 7px 12px; font-size: 13px; outline: none;
+      transition: border-color .15s;
+    }
+    .q-search:focus { border-color: #6366f1; }
+
+    .q-group { margin-bottom: 20px; }
+    .q-group-header {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 8px;
+    }
+    .q-group-badge {
+      font-size: 11px; font-weight: 800; border-radius: 6px;
+      padding: 3px 10px;
+    }
+    .q-group-badge.w1 { background: #eef2ff; color: #4338ca; }
+    .q-group-badge.w2 { background: #f0fdf4; color: #15803d; }
+    .q-group-badge.w3 { background: #fff7ed; color: #c2410c; }
+    .q-group-badge.w4 { background: #fdf4ff; color: #7e22ce; }
+    .q-group-title { font-size: 13px; font-weight: 700; color: #18181b; }
+    .q-group-count { font-size: 11px; color: #9ca3af; }
+
+    .q-group-list {
+      background: #fff;
+      border: 1.5px solid #e4e4e7;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .q-row {
+      display: flex; gap: 12px; align-items: flex-start;
+      padding: 11px 16px;
+      border-bottom: 1px solid #f4f4f5;
+      position: relative;
+    }
+    .q-row:last-child { border-bottom: none; }
+    .q-row-num {
+      font-size: 11px; font-weight: 700; color: #9ca3af;
+      min-width: 20px; flex-shrink: 0; padding-top: 2px;
+    }
+    .q-row-text {
+      font-size: 13px; color: #374151; line-height: 1.55; flex: 1;
+      cursor: text;
+      border-radius: 4px;
+      padding: 1px 4px; margin: -1px -4px;
+      transition: background .12s;
+    }
+    .q-row-text:hover { background: #f0f0fe; }
+    .q-row-text.editing { background: transparent; }
+
+    .q-text-input {
+      flex: 1;
+      font-size: 13px; color: #374151; line-height: 1.55;
+      border: 1.5px solid #6366f1; border-radius: 6px;
+      padding: 4px 8px; outline: none;
+      font-family: inherit; resize: vertical; min-height: 36px;
+      background: #fafafe;
+    }
+
+    .q-row-block {
+      flex-shrink: 0; font-size: 10px; font-weight: 700; letter-spacing: .06em;
+      text-transform: uppercase; background: #fdf4ff; color: #7e22ce;
+      border-radius: 4px; padding: 2px 6px; margin-top: 3px;
+    }
+    .q-delete-btn {
+      flex-shrink: 0;
+      background: none; border: none; cursor: pointer;
+      color: #d1d5db; font-size: 14px; line-height: 1;
+      padding: 2px 4px; border-radius: 4px;
+      opacity: 0; transition: opacity .15s, color .12s;
+      align-self: flex-start; margin-top: 2px;
+    }
+    .q-row:hover .q-delete-btn { opacity: 1; }
+    .q-delete-btn:hover { color: #dc2626; background: #fee2e2; }
+
+    /* Add question row */
+    .q-add-row {
+      display: flex; gap: 10px; align-items: center;
+      padding: 10px 16px;
+      border-top: 1px dashed #e4e4e7;
+      background: #fafafa;
+    }
+    .q-add-input {
+      flex: 1; font-size: 13px; color: #374151;
+      border: 1.5px solid #e4e4e7; border-radius: 6px;
+      padding: 6px 10px; outline: none; font-family: inherit;
+      background: #fff; transition: border-color .15s;
+    }
+    .q-add-input:focus { border-color: #6366f1; }
+    .q-add-input::placeholder { color: #c4c4cc; }
+    .q-add-btn {
+      font-size: 12px; font-weight: 600;
+      background: #6366f1; color: #fff;
+      border: none; border-radius: 6px;
+      padding: 6px 14px; cursor: pointer;
+      transition: background .12s; white-space: nowrap;
+    }
+    .q-add-btn:hover { background: #4f46e5; }
+    .q-add-btn:disabled { background: #a5b4fc; cursor: not-allowed; }
+
+    .q-row:hover { background: #fafafa; }
+
+    /* highlight */
+    mark { background: #fef9c3; color: inherit; border-radius: 2px; padding: 0 1px; }
+
+    /* ── Summary stats ── */
+    .stats-row {
+      display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;
+    }
+    .stat-pill {
+      background: #fff; border: 1px solid #e4e4e7; border-radius: 8px;
+      padding: 8px 16px; font-size: 12px; color: #52525b;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .stat-pill strong { color: #6366f1; font-size: 15px; }
+
+    /* ── Empty ── */
+    .empty-state {
+      text-align: center; padding: 48px 24px; color: #9ca3af;
+    }
+    .empty-state strong { display: block; font-size: 14px; color: #52525b; margin-bottom: 6px; }
+  </style>
+</head>
+<body>
+
+<!-- Top nav -->
+<nav class="top-nav">
+  <div class="nav-logo">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <rect x="2" y="2" width="5" height="5" rx="1.2" fill="white" opacity=".9"/>
+      <rect x="9" y="2" width="5" height="5" rx="1.2" fill="white" opacity=".7"/>
+      <rect x="2" y="9" width="5" height="5" rx="1.2" fill="white" opacity=".7"/>
+      <rect x="9" y="9" width="5" height="5" rx="1.2" fill="white" opacity=".5"/>
+    </svg>
+  </div>
+  <div class="nav-title">
+    Workshop Programme
+    <span class="nav-client">Lummus Consultants</span>
+    <span class="nav-phase">Phase 2</span>
+  </div>
+  <a class="nav-back" href="/docs.html">
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+      <path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    Docs
+  </a>
+</nav>
+
+<!-- Tabs -->
+<div class="tabs-bar">
+  <button class="tab-btn active" data-tab="workshops">
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+      <rect x="1.5" y="3" width="13" height="10" rx="2" stroke="currentColor" stroke-width="1.4"/>
+      <path d="M5 3V2M11 3V2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+    </svg>
+    Workshops
+    <span class="tab-count" id="wsCount">4</span>
+  </button>
+  <button class="tab-btn" data-tab="team">
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+      <circle cx="6" cy="5" r="2.5" stroke="currentColor" stroke-width="1.4"/>
+      <path d="M1.5 13c0-2.5 2-4 4.5-4s4.5 1.5 4.5 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+      <circle cx="12" cy="5" r="2" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M14.5 13c0-1.8-1.1-3-2.5-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+    </svg>
+    Team
+    <span class="tab-count" id="teamCount">7</span>
+  </button>
+  <button class="tab-btn" data-tab="questions">
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+      <path d="M3 4h10M3 8h7M3 12h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+    Questions
+    <span class="tab-count" id="qCount">37</span>
+  </button>
+</div>
+
+<!-- Page body -->
+<div class="page">
+
+  <!-- ── Workshops tab ── -->
+  <div class="tab-content active" id="tab-workshops">
+    <div class="stats-row" id="wsStats"></div>
+    <div class="ws-layout" id="wsGrid"></div>
+  </div>
+
+  <!-- ── Team tab ── -->
+  <div class="tab-content" id="tab-team">
+    <div class="stats-row" id="teamStats"></div>
+    <div class="team-table-wrap">
+      <table class="team-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Role</th>
+            <th>Type</th>
+            <th>Workshops</th>
+            <th>Total effort</th>
+            <th>Commitment</th>
+            <th style="width:32px"></th>
+          </tr>
+        </thead>
+        <tbody id="teamBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── Questions tab ── -->
+  <div class="tab-content" id="tab-questions">
+    <div class="q-filter-bar">
+      <button class="q-filter-btn active all" data-ws="all">All workshops</button>
+      <button class="q-filter-btn w1" data-ws="W1">W1</button>
+      <button class="q-filter-btn w2" data-ws="W2">W2</button>
+      <button class="q-filter-btn w3" data-ws="W3">W3</button>
+      <button class="q-filter-btn w4" data-ws="W4">W4</button>
+      <input class="q-search" id="qSearch" placeholder="Search questions…" type="text"/>
+    </div>
+    <div id="qContent"></div>
+  </div>
+
+</div>
+
+<script>
+// ── State ─────────────────────────────────────────────────────────────────────
+let _workshops    = [];
+let _participants = [];
+let _questions    = [];
+let _activeTab    = "workshops";
+let _selectedWs   = null;    // workshop id currently expanded
+let _qFilter      = "all";
+let _qSearch      = "";
+
+// ── API ───────────────────────────────────────────────────────────────────────
+async function api(path, method = "GET", body) {
+  const opts = { method, headers: {} };
+  if (body) { opts.headers["Content-Type"] = "application/json"; opts.body = JSON.stringify(body); }
+  const res = await fetch(path, opts);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+(async () => {
+  try {
+    [_workshops, _participants, _questions] = await Promise.all([
+      api("/api/engagement/workshops"),
+      api("/api/engagement/participants"),
+      api("/api/engagement/questions"),
+    ]);
+  } catch (e) {
+    document.querySelector(".page").innerHTML =
+      `<div class="empty-state"><strong>Could not load data</strong>${e.message}</div>`;
+    return;
+  }
+  updateCounts();
+  renderWorkshops();
+  renderTeam();
+  renderQuestions();
+  wireTabs();
+  wireQuestionFilters();
+})();
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function wsColor(id) {
+  return { W1:"#4338ca", W2:"#15803d", W3:"#c2410c", W4:"#7e22ce" }[id] || "#6366f1";
+}
+function wsClass(id) { return id?.toLowerCase() || ""; }
+function statusLabel(s) {
+  return { upcoming:"Upcoming", in_progress:"In Progress", completed:"Completed" }[s] || s;
+}
+function nextStatus(s) {
+  return { upcoming:"in_progress", in_progress:"completed", completed:"upcoming" }[s];
+}
+function nextStatusLabel(s) {
+  return { upcoming:"Start", in_progress:"Complete", completed:"Reset" }[s];
+}
+function highlight(text, q) {
+  if (!q) return escHtml(text);
+  const re = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")})`, "gi");
+  return escHtml(text).replace(re, "<mark>$1</mark>");
+}
+function escHtml(s) {
+  return String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+function initials(name) {
+  return name.split(/\s+/).map(w => w[0]).slice(0,2).join("").toUpperCase();
+}
+function questionsFor(wsId) { return _questions.filter(q => q.workshop_id === wsId); }
+function participantsFor(wsId) {
+  return _participants.filter(p => p.workshops.includes(wsId));
+}
+
+function updateCounts() {
+  document.getElementById("wsCount").textContent = _workshops.length;
+  document.getElementById("teamCount").textContent = _participants.length;
+  document.getElementById("qCount").textContent = _questions.length;
+}
+
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+function wireTabs() {
+  document.querySelectorAll(".tab-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      _activeTab = btn.dataset.tab;
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.toggle("active", b === btn));
+      document.querySelectorAll(".tab-content").forEach(c => c.classList.toggle("active", c.id === `tab-${_activeTab}`));
+    });
+  });
+}
+
+// ── Workshops tab ─────────────────────────────────────────────────────────────
+function renderWorkshops() {
+  const completed = _workshops.filter(w => w.status === "completed").length;
+  const inProgress = _workshops.filter(w => w.status === "in_progress").length;
+  const totalQ = _questions.length;
+  const totalExtH = _workshops.reduce((s, w) => s + w.ext_effort, 0);
+
+  document.getElementById("wsStats").innerHTML = `
+    <div class="stat-pill"><strong>${_workshops.length}</strong> workshops</div>
+    <div class="stat-pill"><strong>${completed}</strong> completed</div>
+    ${inProgress ? `<div class="stat-pill"><strong>${inProgress}</strong> in progress</div>` : ""}
+    <div class="stat-pill"><strong>${totalQ}</strong> questions</div>
+    <div class="stat-pill"><strong>${totalExtH}h</strong> ext. effort</div>
+  `;
+
+  const grid = document.getElementById("wsGrid");
+  grid.innerHTML = "";
+
+  _workshops.forEach((ws, idx) => {
+    const qs    = questionsFor(ws.id);
+    const parts = participantsFor(ws.id);
+    const card  = document.createElement("div");
+    card.className = `ws-card${_selectedWs === ws.id ? " selected" : ""}`;
+    card.dataset.id = ws.id;
+
+    card.innerHTML = `
+      <span class="ws-status ${ws.status}">${statusLabel(ws.status)}</span>
+      <div class="ws-card-top">
+        <div class="ws-badge ${wsClass(ws.id)}">${ws.id}</div>
+        <div>
+          <div class="ws-card-title">${escHtml(ws.title)}</div>
+          <div class="ws-card-week">Week ${ws.week} · ${ws.duration / 60}h session</div>
+        </div>
+      </div>
+      <div class="ws-objective">${escHtml(ws.objective.slice(0, 140))}${ws.objective.length > 140 ? "…" : ""}</div>
+      <div class="ws-footer">
+        <span class="ws-meta-chip">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="6" cy="5" r="2.5" stroke="currentColor" stroke-width="1.4"/><path d="M1.5 13c0-2.5 2-4 4.5-4s4.5 1.5 4.5 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          ${parts.length} participants
+        </span>
+        <span class="ws-meta-chip">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M3 4h10M3 8h7M3 12h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          ${qs.length} questions
+        </span>
+        <button class="ws-status-btn" data-wsid="${ws.id}" data-next="${nextStatus(ws.status)}">${nextStatusLabel(ws.status)}</button>
+      </div>
+      <div class="ws-effort-row">
+        <span class="effort-badge ext">⏱ ${ws.ext_effort}h ext.</span>
+        <span class="effort-badge lci">📋 ${escHtml(ws.lci_effort)} LCI</span>
+      </div>`;
+
+    // Click card → expand detail panel below this row
+    card.addEventListener("click", e => {
+      if (e.target.closest(".ws-status-btn")) return;
+      _selectedWs = _selectedWs === ws.id ? null : ws.id;
+      renderWorkshops();
+      if (_selectedWs) {
+        setTimeout(() => {
+          document.querySelector(".ws-detail")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        }, 50);
+      }
+    });
+
+    // Status button
+    card.querySelector(".ws-status-btn").addEventListener("click", async (e) => {
+      e.stopPropagation();
+      const btn = e.currentTarget;
+      const next = btn.dataset.next;
+      btn.disabled = true;
+      try {
+        await api(`/api/engagement/workshops/${ws.id}`, "PUT", { status: next });
+        ws.status = next;
+        renderWorkshops();
+      } catch { btn.disabled = false; }
+    });
+
+    grid.appendChild(card);
+
+    // Insert detail panel after this card's row if selected
+    if (_selectedWs === ws.id) {
+      const detail = buildDetail(ws);
+      // For 2-col grid: insert after card. We wrap in a grid-spanning container.
+      grid.appendChild(detail);
+    }
+  });
+}
+
+function buildDetail(ws) {
+  const qs    = questionsFor(ws.id);
+  const parts = participantsFor(ws.id);
+
+  const wrap = document.createElement("div");
+  wrap.className = "ws-detail";
+
+  // Group W4 questions by block
+  const grouped = ws.id === "W4";
+  const blocks = grouped
+    ? [...new Set(qs.map(q => q.block).filter(Boolean))]
+    : [null];
+
+  let questionsHtml = "";
+  if (grouped) {
+    blocks.forEach(block => {
+      const bqs = qs.filter(q => q.block === block);
+      questionsHtml += `<div class="q-block-label">${escHtml(block)}</div>`;
+      questionsHtml += bqs.map(q => `
+        <li class="question-item">
+          <span class="q-num">${q.number}</span>
+          <span class="q-text">${escHtml(q.text)}</span>
+        </li>`).join("");
+    });
+  } else {
+    questionsHtml = qs.map(q => `
+      <li class="question-item">
+        <span class="q-num">${q.number}</span>
+        <span class="q-text">${escHtml(q.text)}</span>
+      </li>`).join("");
+  }
+
+  wrap.innerHTML = `
+    <div class="ws-detail-hdr">
+      <div class="ws-detail-hdr-title">${escHtml(ws.title)}</div>
+      <button class="ws-detail-hdr-close" id="detailClose">×</button>
+    </div>
+    <div class="ws-detail-body">
+      <div class="ws-participants">
+        <div class="ws-section-label">Participants · ${parts.length}</div>
+        ${parts.map(p => `
+          <div class="participant-row">
+            <div class="participant-avatar ${p.type}">${initials(p.name)}</div>
+            <div>
+              <div class="participant-name">${escHtml(p.name)}</div>
+              <div class="participant-role">${escHtml(p.role)}</div>
+            </div>
+            <span class="participant-effort">${escHtml(p.total_effort)}</span>
+          </div>`).join("")}
+      </div>
+      <div class="ws-questions">
+        <div class="ws-section-label">Question Bank · ${qs.length} questions</div>
+        <ul class="question-list">${questionsHtml}</ul>
+      </div>
+    </div>`;
+
+  wrap.querySelector("#detailClose").addEventListener("click", () => {
+    _selectedWs = null;
+    renderWorkshops();
+  });
+
+  return wrap;
+}
+
+// ── Team tab ──────────────────────────────────────────────────────────────────
+
+/** Save one or more fields for a participant */
+async function saveParticipant(p, patch) {
+  Object.assign(p, patch);
+  await api(`/api/engagement/participants/${p.id}`, "PUT", patch);
+}
+
+/** Make a cell inline-editable.
+ *  @param {HTMLElement} container  – the <td> or wrapper element
+ *  @param {string}      getText    – function returning current display string
+ *  @param {function}    onSave     – async (newValue) => void
+ *  @param {object}      opts       – { multiline, small }
+ */
+function makeEditable(container, getText, onSave, opts = {}) {
+  const display = document.createElement("span");
+  display.className = "editable-cell";
+  display.textContent = getText();
+
+  display.addEventListener("click", () => {
+    const tag = opts.multiline ? "textarea" : "input";
+    const inp = document.createElement(tag);
+    inp.className = opts.multiline ? "cell-textarea" : `cell-input${opts.small ? " small" : ""}`;
+    inp.value = getText();
+    if (opts.multiline) inp.rows = Math.max(2, Math.ceil(getText().length / 60));
+
+    const commit = async () => {
+      const val = inp.value.trim();
+      inp.replaceWith(display);
+      display.textContent = getText(); // revert optimistically first
+      if (!val || val === getText()) return;
+      try {
+        await onSave(val);
+        display.textContent = val;
+      } catch (e) { alert("Save failed: " + e.message); }
+    };
+
+    inp.addEventListener("blur", commit);
+    inp.addEventListener("keydown", e => {
+      if (e.key === "Escape") { inp.value = getText(); inp.blur(); }
+      if (e.key === "Enter" && !opts.multiline) { e.preventDefault(); inp.blur(); }
+      if (e.key === "Enter" && opts.multiline && !e.shiftKey) { e.preventDefault(); inp.blur(); }
+    });
+
+    display.replaceWith(inp);
+    inp.focus();
+    inp.setSelectionRange(inp.value.length, inp.value.length);
+  });
+
+  container.appendChild(display);
+}
+
+function buildPersonRow(p, tbody) {
+  const tr = document.createElement("tr");
+
+  // ── Name cell ────────────────────────────────────────────────────────────────
+  const nameTd = document.createElement("td");
+  const nameWrap = document.createElement("div");
+  nameWrap.style.cssText = "display:flex;align-items:center;gap:8px";
+
+  const avatar = document.createElement("div");
+  avatar.className = `participant-avatar ${p.type}`;
+  avatar.style.cssText = "width:28px;height:28px;font-size:11px;flex-shrink:0";
+  avatar.textContent = initials(p.name);
+
+  nameWrap.appendChild(avatar);
+  makeEditable(nameWrap, () => p.name, async val => {
+    await saveParticipant(p, { name: val });
+    avatar.textContent = initials(p.name);
+    renderWorkshops(); // refresh participant avatars in detail panel
+  });
+  nameTd.appendChild(nameWrap);
+  tr.appendChild(nameTd);
+
+  // ── Role cell ────────────────────────────────────────────────────────────────
+  const roleTd = document.createElement("td");
+  makeEditable(roleTd, () => p.role, async val => saveParticipant(p, { role: val }));
+  tr.appendChild(roleTd);
+
+  // ── Type cell (toggle click) ─────────────────────────────────────────────────
+  const typeTd = document.createElement("td");
+  const typeBadge = document.createElement("span");
+  typeBadge.className = `type-badge ${p.type} type-toggle`;
+  typeBadge.title = "Click to toggle";
+  typeBadge.textContent = p.type === "external" ? "External" : "Lummus";
+  typeBadge.addEventListener("click", async () => {
+    const next = p.type === "external" ? "lummus" : "external";
+    try {
+      await saveParticipant(p, { type: next });
+      typeBadge.className = `type-badge ${next} type-toggle`;
+      typeBadge.textContent = next === "external" ? "External" : "Lummus";
+      avatar.className = `participant-avatar ${next}`;
+    } catch (e) { alert("Save failed: " + e.message); }
+  });
+  typeTd.appendChild(typeBadge);
+  tr.appendChild(typeTd);
+
+  // ── Workshops cell (checkboxes) ───────────────────────────────────────────────
+  const wsTd = document.createElement("td");
+  const wsWrap = document.createElement("div");
+  wsWrap.className = "ws-checkbox-wrap";
+  ["W1","W2","W3","W4"].forEach(wId => {
+    const lbl = document.createElement("label");
+    const checked = p.workshops.includes(wId);
+    lbl.className = `ws-check-label ${wId.toLowerCase()}${checked ? " checked" : ""}`;
+    lbl.title = `Toggle ${wId}`;
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.checked = checked;
+    cb.addEventListener("change", async () => {
+      const newWs = cb.checked
+        ? [...p.workshops, wId].filter((v,i,a) => a.indexOf(v) === i).sort()
+        : p.workshops.filter(w => w !== wId);
+      try {
+        await saveParticipant(p, { workshops: newWs });
+        lbl.classList.toggle("checked", cb.checked);
+        renderWorkshops();
+      } catch (e) { cb.checked = !cb.checked; alert("Save failed: " + e.message); }
+    });
+    lbl.appendChild(cb);
+    lbl.appendChild(document.createTextNode(wId));
+    wsWrap.appendChild(lbl);
+  });
+  wsTd.appendChild(wsWrap);
+  tr.appendChild(wsTd);
+
+  // ── Effort cell ──────────────────────────────────────────────────────────────
+  const effortTd = document.createElement("td");
+  makeEditable(effortTd, () => p.total_effort, async val => saveParticipant(p, { total_effort: val }), { small: true });
+  tr.appendChild(effortTd);
+
+  // ── Commitment cell ──────────────────────────────────────────────────────────
+  const commitTd = document.createElement("td");
+  commitTd.style.cssText = "max-width:260px";
+  makeEditable(commitTd, () => p.commitment_detail, async val => saveParticipant(p, { commitment_detail: val }), { multiline: true });
+  // Override display text color
+  commitTd.querySelector(".editable-cell").style.cssText = "font-size:11.5px;color:#6b7280";
+  tr.appendChild(commitTd);
+
+  // ── Delete cell ──────────────────────────────────────────────────────────────
+  const delTd = document.createElement("td");
+  delTd.style.cssText = "width:32px;padding:0 8px";
+  const delBtn = document.createElement("button");
+  delBtn.className = "row-delete-btn";
+  delBtn.title = "Remove person";
+  delBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+    <path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+  </svg>`;
+  delBtn.addEventListener("click", async () => {
+    if (!confirm(`Remove ${p.name} from the team?`)) return;
+    try {
+      await api(`/api/engagement/participants/${p.id}`, "DELETE");
+      _participants = _participants.filter(x => x.id !== p.id);
+      tr.remove();
+      updateCounts();
+      updateTeamStats();
+      renderWorkshops();
+    } catch (e) { alert("Delete failed: " + e.message); }
+  });
+  delTd.appendChild(delBtn);
+  tr.appendChild(delTd);
+
+  return tr;
+}
+
+function updateTeamStats() {
+  const ext = _participants.filter(p => p.type === "external").length;
+  const lci = _participants.filter(p => p.type === "lummus").length;
+  document.getElementById("teamStats").innerHTML = `
+    <div class="stat-pill"><strong>${_participants.length}</strong> people</div>
+    <div class="stat-pill"><strong>${ext}</strong> external</div>
+    <div class="stat-pill"><strong>${lci}</strong> Lummus-side</div>
+  `;
+}
+
+function renderTeam() {
+  updateTeamStats();
+
+  const tbody = document.getElementById("teamBody");
+  tbody.innerHTML = "";
+
+  _participants.forEach(p => tbody.appendChild(buildPersonRow(p, tbody)));
+
+  // ── Add person row ────────────────────────────────────────────────────────────
+  const addTr = document.createElement("tr");
+  addTr.className = "add-person-row";
+  const addTd = document.createElement("td");
+  addTd.colSpan = 7;
+
+  const form = document.createElement("div");
+  form.className = "add-person-form";
+
+  const nameIn    = mkAddInput("Name", "sm");
+  const roleIn    = mkAddInput("Role", "sm");
+  const effortIn  = mkAddInput("Effort (e.g. 8h)", "sm");
+
+  const typeSelect = document.createElement("select");
+  typeSelect.className = "add-person-input sm";
+  typeSelect.style.cssText = "width:110px";
+  ["external","lummus"].forEach(v => {
+    const opt = document.createElement("option");
+    opt.value = v; opt.textContent = v === "external" ? "External" : "Lummus";
+    typeSelect.appendChild(opt);
+  });
+
+  const addBtn = document.createElement("button");
+  addBtn.className = "add-person-btn";
+  addBtn.textContent = "+ Add person";
+
+  const doAdd = async () => {
+    const name = nameIn.value.trim();
+    if (!name) { nameIn.focus(); return; }
+    addBtn.disabled = true;
+    try {
+      const newP = await api("/api/engagement/participants", "POST", {
+        name,
+        role:             roleIn.value.trim()    || "—",
+        type:             typeSelect.value,
+        total_effort:     effortIn.value.trim()  || "—",
+        commitment_detail:"",
+        workshops:        [],
+      });
+      _participants.push(newP);
+      // Insert before the add row
+      tbody.insertBefore(buildPersonRow(newP, tbody), addTr);
+      nameIn.value = roleIn.value = effortIn.value = "";
+      updateCounts();
+      updateTeamStats();
+      renderWorkshops();
+    } catch (e) { alert("Could not add person: " + e.message); }
+    finally { addBtn.disabled = false; }
+  };
+
+  [nameIn, roleIn, effortIn, typeSelect].forEach(el => {
+    el.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); doAdd(); } });
+  });
+  addBtn.addEventListener("click", doAdd);
+
+  form.append(nameIn, roleIn, effortIn, typeSelect, addBtn);
+  addTd.appendChild(form);
+  addTr.appendChild(addTd);
+  tbody.appendChild(addTr);
+}
+
+function mkAddInput(placeholder, cls = "") {
+  const inp = document.createElement("input");
+  inp.type = "text";
+  inp.className = `add-person-input${cls ? " " + cls : ""}`;
+  inp.placeholder = placeholder;
+  return inp;
+}
+
+// ── Questions tab ─────────────────────────────────────────────────────────────
+function wireQuestionFilters() {
+  document.querySelectorAll(".q-filter-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      _qFilter = btn.dataset.ws;
+      document.querySelectorAll(".q-filter-btn").forEach(b =>
+        b.classList.toggle("active", b === btn));
+      renderQuestions();
+    });
+  });
+  document.getElementById("qSearch").addEventListener("input", e => {
+    _qSearch = e.target.value.trim().toLowerCase();
+    renderQuestions();
+  });
+}
+
+function renderQuestions() {
+  const workshopIds = _qFilter === "all"
+    ? _workshops.map(w => w.id)
+    : [_qFilter];
+
+  const container = document.getElementById("qContent");
+  container.innerHTML = "";
+
+  let totalShown = 0;
+
+  workshopIds.forEach(wsId => {
+    const ws = _workshops.find(w => w.id === wsId);
+    if (!ws) return;
+
+    let qs = _questions.filter(q => q.workshop_id === wsId);
+    if (_qSearch) qs = qs.filter(q => q.text.toLowerCase().includes(_qSearch));
+
+    // Always show the group when not searching (so Add still works)
+    if (_qSearch && !qs.length) return;
+    totalShown += qs.length;
+
+    const group = document.createElement("div");
+    group.className = "q-group";
+
+    // ── Header ──────────────────────────────────────────────────
+    const hdr = document.createElement("div");
+    hdr.className = "q-group-header";
+    const countSpan = document.createElement("span");
+    countSpan.className = "q-group-count";
+    countSpan.textContent = `${qs.length} question${qs.length !== 1 ? "s" : ""}`;
+    hdr.innerHTML = `
+      <span class="q-group-badge ${wsClass(wsId)}">${wsId}</span>
+      <span class="q-group-title">${escHtml(ws.title)}</span>`;
+    hdr.appendChild(countSpan);
+    group.appendChild(hdr);
+
+    // ── List ─────────────────────────────────────────────────────
+    const list = document.createElement("div");
+    list.className = "q-group-list";
+
+    qs.forEach(q => list.appendChild(buildQuestionRow(q, countSpan, qs)));
+
+    // ── Add row (hidden during search) ───────────────────────────
+    if (!_qSearch) {
+      const addRow = document.createElement("div");
+      addRow.className = "q-add-row";
+
+      const addInput = document.createElement("input");
+      addInput.type = "text";
+      addInput.className = "q-add-input";
+      addInput.placeholder = "Type a new question and press Enter…";
+
+      const addBtn = document.createElement("button");
+      addBtn.className = "q-add-btn";
+      addBtn.textContent = "+ Add";
+
+      const doAdd = async () => {
+        const text = addInput.value.trim();
+        if (!text) return;
+        addBtn.disabled = true;
+        try {
+          const newQ = await api("/api/engagement/questions", "POST", {
+            workshop_id: wsId,
+            text,
+            block: ws.id === "W4" ? (qs[qs.length - 1]?.block || "Gaps") : null,
+          });
+          _questions.push(newQ);
+          addInput.value = "";
+          renderQuestions();
+          updateCounts();
+        } catch (e) { alert("Could not add question: " + e.message); }
+        finally { addBtn.disabled = false; }
+      };
+
+      addInput.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); doAdd(); } });
+      addBtn.addEventListener("click", doAdd);
+
+      addRow.append(addInput, addBtn);
+      list.appendChild(addRow);
+    }
+
+    group.appendChild(list);
+    container.appendChild(group);
+  });
+
+  if (!totalShown && _qSearch) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <strong>No questions match</strong>
+        Try a different filter or search term.
+      </div>`;
+  }
+}
+
+function buildQuestionRow(q, countSpan, siblingQs) {
+  const row = document.createElement("div");
+  row.className = "q-row";
+  row.dataset.qid = q.id;
+
+  const numSpan = document.createElement("span");
+  numSpan.className = "q-row-num";
+  numSpan.textContent = q.number;
+
+  const textSpan = document.createElement("span");
+  textSpan.className = "q-row-text";
+  if (_qSearch) {
+    textSpan.innerHTML = highlight(q.text, _qSearch);
+  } else {
+    textSpan.textContent = q.text;
+  }
+
+  // Click text → inline textarea
+  textSpan.addEventListener("click", () => {
+    if (textSpan.classList.contains("editing")) return;
+    textSpan.classList.add("editing");
+
+    const ta = document.createElement("textarea");
+    ta.className = "q-text-input";
+    ta.value = q.text;
+    ta.rows = Math.max(2, Math.ceil(q.text.length / 80));
+
+    const commit = async () => {
+      const newText = ta.value.trim();
+      ta.replaceWith(textSpan);
+      textSpan.classList.remove("editing");
+      if (!newText || newText === q.text) {
+        textSpan.textContent = q.text;
+        return;
+      }
+      q.text = newText;
+      textSpan.textContent = newText;
+      try {
+        await api(`/api/engagement/questions/${q.id}`, "PUT", { text: newText });
+      } catch (e) { alert("Save failed: " + e.message); }
+    };
+
+    ta.addEventListener("blur", commit);
+    ta.addEventListener("keydown", e => {
+      if (e.key === "Escape") { ta.value = q.text; ta.blur(); }
+      // Shift+Enter = newline, plain Enter = save
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); ta.blur(); }
+    });
+
+    textSpan.replaceWith(ta);
+    ta.focus();
+    ta.setSelectionRange(ta.value.length, ta.value.length);
+  });
+
+  // Block label (W4 only)
+  const blockSpan = q.block
+    ? Object.assign(document.createElement("span"), {
+        className: "q-row-block",
+        textContent: q.block,
+      })
+    : null;
+
+  // Delete button
+  const delBtn = document.createElement("button");
+  delBtn.className = "q-delete-btn";
+  delBtn.title = "Delete question";
+  delBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+    <path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+  </svg>`;
+
+  delBtn.addEventListener("click", async () => {
+    if (!confirm(`Delete question ${q.number}?`)) return;
+    try {
+      await api(`/api/engagement/questions/${q.id}`, "DELETE");
+      _questions = _questions.filter(x => x.id !== q.id);
+      row.remove();
+      // Update count label
+      const remaining = siblingQs.filter(x => x.id !== q.id);
+      if (countSpan) countSpan.textContent = `${remaining.length} question${remaining.length !== 1 ? "s" : ""}`;
+      updateCounts();
+    } catch (e) { alert("Delete failed: " + e.message); }
+  });
+
+  row.append(numSpan, textSpan);
+  if (blockSpan) row.appendChild(blockSpan);
+  row.appendChild(delBtn);
+  return row;
+}
+</script>
+</body>
+</html>

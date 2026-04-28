@@ -46,6 +46,9 @@ import { ClauseBlockNodeView }   from "./extensions/clauseBlock/nodeView.js";
 import { PartyBlockNodeView }    from "./extensions/partyBlock/nodeView.js";
 import { MatterBlockNodeView }        from "./extensions/matterBlock/nodeView.js";
 import { VersionTimelineNodeView }    from "./extensions/versionTimeline/nodeView.js";
+import { MermaidBlockNodeView }       from "./extensions/mermaidBlock/nodeView.js";
+import { BomBlockNodeView }           from "./extensions/bomBlock/nodeView.js";
+import { MaintenanceBlockNodeView }   from "./extensions/maintenanceBlock/nodeView.js";
 
 // ── URL params ────────────────────────────────────────────────────────────────
 
@@ -385,11 +388,14 @@ function buildAutoSave(indicator, getDocId) {
       const id = getDocId();
       if (!id) return;
       const title = extractTitle(view.state.doc);
-      await fetch(`/api/docs/${id}`, {
+      const docJson = view.state.doc.toJSON();
+      console.log("[autosave] saving id:", id, "node types:", docJson.content?.map(n => n.type));
+      const saveRes = await fetch(`/api/docs/${id}`, {
         method:  "PUT",
         headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ content: view.state.doc.toJSON(), title }),
-      }).catch(() => {});
+        body:    JSON.stringify({ content: docJson, title }),
+      }).catch(e => { console.error("[autosave] fetch error:", e); });
+      if (saveRes && !saveRes.ok) console.error("[autosave] server error:", saveRes.status, await saveRes.text());
       // Update nav title live
       const navTitle = document.getElementById("editorNavTitle");
       if (navTitle) navTitle.textContent = title;
@@ -458,6 +464,13 @@ const scratchDoc = schema.node("doc", null, [
 // ── Bootstrap ─────────────────────────────────────────────────────────────────
 
 async function init() {
+  // Load extension config (null = all enabled if API unavailable)
+  let extConfig = null;
+  try {
+    const cfgRes = await fetch("/api/extensions/config");
+    if (cfgRes.ok) extConfig = await cfgRes.json();
+  } catch { /* server offline — show all buttons */ }
+
   // Load doc from DB if ?id= is present
   let initialDoc = scratchDoc;
   let savedTitle = null;
@@ -475,7 +488,7 @@ async function init() {
         return;
       }
     } catch (e) {
-      console.warn("Could not load document:", e);
+      console.error("[init] Could not load document:", e);
     }
 
     buildNavBar(savedTitle);
@@ -502,7 +515,7 @@ async function init() {
       editorKeymap,
       buildInputRules(),
       placeholderPlugin("Start writing…"),
-      menuPlugin("#toolbar"),
+      menuPlugin("#toolbar", extConfig),
       dragHandlePlugin(),
     ],
   });
@@ -532,6 +545,9 @@ async function init() {
       partyBlock:    (node, view, getPos) => new PartyBlockNodeView(node, view, getPos),
       matterBlock:      (node, view, getPos) => new MatterBlockNodeView(node, view, getPos),
       versionTimeline:  (node, view, getPos) => new VersionTimelineNodeView(node, view, getPos),
+      maintenanceBlock: (node, view, getPos) => new MaintenanceBlockNodeView(node, view, getPos),
+      bomBlock:         (node, view, getPos) => new BomBlockNodeView(node, view, getPos),
+      mermaidBlock:     (node, view, getPos) => new MermaidBlockNodeView(node, view, getPos),
     },
 
     // ── Drop image files anywhere in the document ────────────────────────────
