@@ -49,6 +49,7 @@ import { VersionTimelineNodeView }    from "./extensions/versionTimeline/nodeVie
 import { MermaidBlockNodeView }       from "./extensions/mermaidBlock/nodeView.js";
 import { BomBlockNodeView }           from "./extensions/bomBlock/nodeView.js";
 import { MaintenanceBlockNodeView }   from "./extensions/maintenanceBlock/nodeView.js";
+import { TodoBlockNodeView }          from "./extensions/todoBlock/nodeView.js";
 
 // ── URL params ────────────────────────────────────────────────────────────────
 
@@ -548,6 +549,7 @@ async function init() {
       maintenanceBlock: (node, view, getPos) => new MaintenanceBlockNodeView(node, view, getPos),
       bomBlock:         (node, view, getPos) => new BomBlockNodeView(node, view, getPos),
       mermaidBlock:     (node, view, getPos) => new MermaidBlockNodeView(node, view, getPos),
+      todoBlock:        (node, view, getPos) => new TodoBlockNodeView(node, view, getPos),
     },
 
     // ── Drop image files anywhere in the document ────────────────────────────

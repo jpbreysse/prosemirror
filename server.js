@@ -123,6 +123,24 @@ async function initDb() {
     )
   `);
 
+  // Audit log — append-only record of every API request
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS pm_audit_log (
+      id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+      ts          TIMESTAMPTZ NOT NULL DEFAULT now(),
+      method      TEXT        NOT NULL,
+      path        TEXT        NOT NULL,
+      status      INT,
+      duration_ms INT,
+      ip          TEXT,
+      user_agent  TEXT,
+      body_size   INT         DEFAULT 0
+    )
+  `);
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS pm_audit_log_ts_idx ON pm_audit_log (ts DESC)
+  `);
+
   // ── Lummus Phase 2 — Engagement tables ──────────────────────────────────────
   await pool.query(`
     CREATE TABLE IF NOT EXISTS lci_workshops (
@@ -288,6 +306,28 @@ if (process.env.NODE_ENV === "production") {
 
 // Serve uploaded files as static assets
 app.use("/uploads", express.static(UPLOADS_DIR));
+
+// ── Audit-log middleware ──────────────────────────────────────────────────────
+// Fires after every /api/* response (non-blocking fire-and-forget insert).
+// Skips /api/audit-log itself to avoid self-logging noise.
+app.use((req, res, next) => {
+  if (!req.path.startsWith("/api/") || req.path.startsWith("/api/audit-log")) {
+    return next();
+  }
+  const t0       = Date.now();
+  const ip       = (req.headers["x-forwarded-for"] || req.socket?.remoteAddress || "").split(",")[0].trim();
+  const bodySize = parseInt(req.headers["content-length"] || "0", 10) || 0;
+
+  res.on("finish", () => {
+    pool.query(
+      `INSERT INTO pm_audit_log (method, path, status, duration_ms, ip, user_agent, body_size)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [req.method, req.path, res.statusCode, Date.now() - t0, ip,
+       req.headers["user-agent"] || "", bodySize]
+    ).catch(() => {}); // never block the response
+  });
+  next();
+});
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 
@@ -1004,6 +1044,50 @@ app.get("/api/query/critical-machines", async (req, res) => {
     results.sort((a, b) => (order[a.combined_status] ?? 9) - (order[b.combined_status] ?? 9));
 
     res.json(results);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── Audit log ─────────────────────────────────────────────────────────────────
+
+// GET /api/audit-log?method=GET&path=/api/docs&status=200&from=2026-04-01&to=2026-04-30&limit=100&offset=0
+app.get("/api/audit-log", async (req, res) => {
+  const { method, path: p, status, from, to } = req.query;
+  const limit  = Math.min(parseInt(req.query.limit  || "100"), 500);
+  const offset = parseInt(req.query.offset || "0");
+
+  const conds  = [];
+  const params = [];
+  let   i      = 1;
+
+  if (method) { conds.push(`method = $${i++}`);      params.push(method.toUpperCase()); }
+  if (p)      { conds.push(`path ILIKE $${i++}`);    params.push(`%${p}%`); }
+  if (status) { conds.push(`status = $${i++}`);      params.push(parseInt(status)); }
+  if (from)   { conds.push(`ts >= $${i++}`);         params.push(from); }
+  if (to)     { conds.push(`ts <= $${i++}::date + 1`); params.push(to); }
+
+  const where = conds.length ? "WHERE " + conds.join(" AND ") : "";
+
+  try {
+    const [{ rows: logs }, { rows: [{ total }] }] = await Promise.all([
+      pool.query(
+        `SELECT * FROM pm_audit_log ${where} ORDER BY ts DESC LIMIT $${i} OFFSET $${i + 1}`,
+        [...params, limit, offset]
+      ),
+      pool.query(`SELECT COUNT(*)::int AS total FROM pm_audit_log ${where}`, params),
+    ]);
+    res.json({ logs, total, limit, offset });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// DELETE /api/audit-log — clear all logs (admin use)
+app.delete("/api/audit-log", async (_req, res) => {
+  try {
+    const { rowCount } = await pool.query("DELETE FROM pm_audit_log");
+    res.json({ deleted: rowCount });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

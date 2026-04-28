@@ -35,6 +35,7 @@ import { insertVersionTimeline }  from "./extensions/versionTimeline/commands.js
 import { insertMermaidBlock }      from "./extensions/mermaidBlock/commands.js";
 import { insertBomBlock }          from "./extensions/bomBlock/commands.js";
 import { insertMaintenanceBlock }  from "./extensions/maintenanceBlock/commands.js";
+import { insertTodoBlock }         from "./extensions/todoBlock/commands.js";
 import {
   insertTable,
   addRowAfter, addRowBefore, deleteRow,
@@ -246,6 +247,7 @@ export function menuPlugin(containerSelector = "#toolbar", extConfig = null) {
         isOn("versionTimeline")  && button("🕓",  "Insert Version Timeline",     () => run(insertVersionTimeline())),
         isOn("bomBlock")         && button("⚙️",  "Insert Bill of Materials",    () => run(insertBomBlock())),
         isOn("maintenanceBlock") && button("🔧",  "Insert Maintenance Schedule", () => run(insertMaintenanceBlock())),
+        isOn("todoBlock")        && button("✅",  "Insert Daily Todo",           () => run(insertTodoBlock())),
         isOn("mermaidBlock")     && button("🔀",  "Insert Mermaid Diagram",      () => run(insertMermaidBlock())),
         isOn("reply")            && button("💬",  "Add Reply",                   () => run(insertReply())),
       ].filter(Boolean);

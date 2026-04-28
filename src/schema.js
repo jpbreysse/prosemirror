@@ -623,6 +623,26 @@ const mermaidBlockNodeSpec = {
   },
 };
 
+// ------------------------------------------------------------------
+// TodoBlock node — a daily task list organized by date.
+// All tasks for all days are stored as JSON in attrs so the block
+// round-trips cleanly in the ProseMirror document.
+// ------------------------------------------------------------------
+const todoBlockNodeSpec = {
+  group: "block",
+  atom: true,
+  attrs: {
+    activeDate: { default: "" },   // ISO date string "YYYY-MM-DD"
+    days: { default: [] },         // [{ date, tasks: [{ id, text, done, priority }] }]
+  },
+  parseDOM: [{ tag: "div[data-todo-block]", getAttrs(dom) {
+    try { return JSON.parse(dom.getAttribute("data-todo-block")); } catch { return {}; }
+  }}],
+  toDOM(node) {
+    return ["div", { "data-todo-block": JSON.stringify(node.attrs) }];
+  },
+};
+
 const withCustom = withLists.append({
   graph: graphNodeSpec,
   map: mapNodeSpec,
@@ -649,6 +669,7 @@ const withCustom = withLists.append({
   maintenanceBlock: maintenanceBlockNodeSpec,
   bomBlock:         bomBlockNodeSpec,
   mermaidBlock:     mermaidBlockNodeSpec,
+  todoBlock:        todoBlockNodeSpec,
 });
 
 const nodes = withCustom.append(tableNodes({ tableGroup: "block", cellContent: "block+" }));
