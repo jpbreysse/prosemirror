@@ -58,6 +58,10 @@ const _rawId = new URLSearchParams(window.location.search).get("id");
 // Guard against stale "undefined" strings left in the URL
 const docId = (_rawId && _rawId !== "undefined" && _rawId !== "null") ? _rawId : null;
 
+// Embedded mode: ?chrome=minimal hides the back-link nav bar so the editor
+// can be hosted inside another app's iframe without showing duplicate chrome.
+const minimalChrome = new URLSearchParams(window.location.search).get("chrome") === "minimal";
+
 // ── Save indicator ────────────────────────────────────────────────────────────
 
 function buildSaveIndicator() {
@@ -493,7 +497,7 @@ async function init() {
       console.error("[init] Could not load document:", e);
     }
 
-    buildNavBar(savedTitle);
+    if (!minimalChrome) buildNavBar(savedTitle);
   }
 
   // If no ?id= param, auto-create a document on first edit and redirect
@@ -661,7 +665,7 @@ async function init() {
           headers: { "Content-Type": "application/json" },
           body:    JSON.stringify({ id: newId, content: next.doc.toJSON(), title }),
         })
-          .then(() => buildNavBar(title))
+          .then(() => { if (!minimalChrome) buildNavBar(title); })
           .catch(() => {});
       }
 
@@ -670,6 +674,18 @@ async function init() {
   });
 
   window.__editorView = view;
+
+  // ── Related documents section ────────────────────────────────────────────────
+  if (docId) {
+    const { mountDocLinksSection } = await import("./docLinks.js");
+    const linksContainer = document.createElement("div");
+    linksContainer.id = "docLinksSection";
+    document.getElementById("app").appendChild(linksContainer);
+    mountDocLinksSection(linksContainer, docId, {
+      readOnly:  false,
+      fromTitle: savedTitle ?? "",
+    });
+  }
 }
 
 init();

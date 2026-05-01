@@ -1,7 +1,13 @@
 import { defineConfig } from "vite";
 import { resolve } from "path";
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
+const pkg = require("./package.json");
 
 export default defineConfig({
+  define: {
+    __APP_VERSION__: JSON.stringify(pkg.version),
+  },
   build: {
     rollupOptions: {
       input: {

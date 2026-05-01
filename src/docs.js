@@ -219,7 +219,7 @@ function renderSidebar() {
         <rect width="28" height="28" rx="7" fill="#6366f1"/>
         <path d="M8 8h12M8 13h12M8 18h8" stroke="white" stroke-width="2" stroke-linecap="round"/>
       </svg>
-      <span class="docs-sidebar-brand">LexDocs</span>
+      <span class="docs-sidebar-brand">v${__APP_VERSION__}</span>
     </div>
 
     <nav class="docs-sidebar-nav">

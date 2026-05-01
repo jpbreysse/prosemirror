@@ -126,6 +126,13 @@ async function init() {
     // Suppress the default editable cursor style
     attributes: { class: "reader-pm-content" },
   });
+
+  // ── Related documents section (read-only) ────────────────────────────────────
+  const { mountDocLinksSection } = await import("./docLinks.js");
+  const linksContainer = document.createElement("div");
+  linksContainer.id = "docLinksSection";
+  document.getElementById("reader-body").appendChild(linksContainer);
+  mountDocLinksSection(linksContainer, docId, { readOnly: true, fromTitle: title });
 }
 
 // ── Nav bar ───────────────────────────────────────────────────────────────────

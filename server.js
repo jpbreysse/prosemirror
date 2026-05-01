@@ -163,6 +163,29 @@ async function initDb() {
       ON pm_asset_document_mention (asset_id)
   `);
 
+  // Document-to-document typed links
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS pm_document_link (
+      id         UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+      from_doc   TEXT        NOT NULL REFERENCES pm_documents(id) ON DELETE CASCADE,
+      to_doc     TEXT        NOT NULL REFERENCES pm_documents(id) ON DELETE CASCADE,
+      link_type  TEXT        NOT NULL
+                 CHECK (link_type IN ('references','supersedes','superseded_by',
+                                      'implements','closes')),
+      from_title TEXT        NOT NULL DEFAULT '',
+      to_title   TEXT        NOT NULL DEFAULT '',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      CONSTRAINT pm_document_link_no_self   CHECK (from_doc <> to_doc),
+      CONSTRAINT pm_document_link_unique    UNIQUE (from_doc, to_doc, link_type)
+    )
+  `);
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS pm_document_link_from_idx ON pm_document_link (from_doc)
+  `);
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS pm_document_link_to_idx   ON pm_document_link (to_doc)
+  `);
+
   // ── Lummus Phase 2 — Engagement tables ──────────────────────────────────────
   await pool.query(`
     CREATE TABLE IF NOT EXISTS lci_workshops (
@@ -660,6 +683,117 @@ app.delete("/api/docs/:id/versions/:versionId", async (req, res) => {
     res.status(204).end();
   } catch (e) {
     res.status(500).json({ error: e.message });
+  }
+});
+
+// ── Document links ────────────────────────────────────────────────────────────
+
+const VALID_LINK_TYPES = new Set(['references','supersedes','superseded_by','implements','closes']);
+const INVERSE_LINK = { supersedes: 'superseded_by', superseded_by: 'supersedes' };
+
+// GET /api/docs/:id/links  →  { outgoing: [...], incoming: [...] }
+app.get("/api/docs/:id/links", async (req, res) => {
+  try {
+    const id = req.params.id;
+    const [out, inc] = await Promise.all([
+      pool.query(
+        `SELECT id, from_doc, to_doc, link_type, from_title, to_title, created_at
+         FROM pm_document_link WHERE from_doc = $1 ORDER BY created_at ASC`,
+        [id]
+      ),
+      pool.query(
+        `SELECT id, from_doc, to_doc, link_type, from_title, to_title, created_at
+         FROM pm_document_link WHERE to_doc = $1 ORDER BY created_at ASC`,
+        [id]
+      ),
+    ]);
+    res.json({ outgoing: out.rows, incoming: inc.rows });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// POST /api/docs/:id/links  body: { to_doc, link_type, from_title, to_title }
+app.post("/api/docs/:id/links", async (req, res) => {
+  const fromDoc = req.params.id;
+  const { to_doc, link_type, from_title = '', to_title = '' } = req.body;
+
+  if (!to_doc)                         return res.status(400).json({ error: 'to_doc is required' });
+  if (to_doc === fromDoc)              return res.status(400).json({ error: 'Cannot link a document to itself' });
+  if (!VALID_LINK_TYPES.has(link_type)) return res.status(400).json({ error: `Invalid link_type: ${link_type}` });
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const { rows } = await client.query(
+      `INSERT INTO pm_document_link (from_doc, to_doc, link_type, from_title, to_title)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (from_doc, to_doc, link_type) DO UPDATE
+         SET from_title = EXCLUDED.from_title,
+             to_title   = EXCLUDED.to_title
+       RETURNING *`,
+      [fromDoc, to_doc, link_type, from_title, to_title]
+    );
+
+    // Auto-create inverse for supersedes ↔ superseded_by
+    const inv = INVERSE_LINK[link_type];
+    if (inv) {
+      await client.query(
+        `INSERT INTO pm_document_link (from_doc, to_doc, link_type, from_title, to_title)
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (from_doc, to_doc, link_type) DO NOTHING`,
+        [to_doc, fromDoc, inv, to_title, from_title]
+      );
+    }
+
+    await client.query('COMMIT');
+    res.status(201).json(rows[0]);
+  } catch (e) {
+    await client.query('ROLLBACK');
+    if (e.code === '23503') return res.status(404).json({ error: 'One or both documents not found' });
+    res.status(500).json({ error: e.message });
+  } finally {
+    client.release();
+  }
+});
+
+// DELETE /api/docs/:id/links/:linkId
+app.delete("/api/docs/:id/links/:linkId", async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // Fetch the link — must belong to this doc (either side)
+    const { rows } = await client.query(
+      `SELECT * FROM pm_document_link WHERE id = $1 AND (from_doc = $2 OR to_doc = $2)`,
+      [req.params.linkId, req.params.id]
+    );
+    if (!rows.length) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Link not found' });
+    }
+
+    const link = rows[0];
+    await client.query(`DELETE FROM pm_document_link WHERE id = $1`, [link.id]);
+
+    // Remove inverse if applicable
+    const inv = INVERSE_LINK[link.link_type];
+    if (inv) {
+      await client.query(
+        `DELETE FROM pm_document_link
+         WHERE from_doc = $1 AND to_doc = $2 AND link_type = $3`,
+        [link.to_doc, link.from_doc, inv]
+      );
+    }
+
+    await client.query('COMMIT');
+    res.status(204).end();
+  } catch (e) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ error: e.message });
+  } finally {
+    client.release();
   }
 });
 
