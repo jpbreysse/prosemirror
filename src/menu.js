@@ -85,12 +85,36 @@ function removeLink(state, dispatch) {
 }
 
 // ------------------------------------------------------------------
+// Lucide SVG icons (15×15, stroke=currentColor)
+// ------------------------------------------------------------------
+
+function icon(paths) {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
+}
+
+const ICONS = {
+  undo:        icon(`<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>`),
+  redo:        icon(`<path d="m15 14 5-5-5-5"/><path d="M19 9H8.5a5.5 5.5 0 0 0 0 11H13"/>`),
+  bold:        icon(`<path d="M6 12h9a4 4 0 0 1 0 8H7a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h7a4 4 0 0 1 0 8"/>`),
+  italic:      icon(`<line x1="19" x2="10" y1="4" y2="4"/><line x1="14" x2="5" y1="20" y2="20"/><line x1="15" x2="9" y1="4" y2="20"/>`),
+  code:        icon(`<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>`),
+  link:        icon(`<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>`),
+  list:        icon(`<line x1="9" x2="20" y1="6" y2="6"/><line x1="9" x2="20" y1="12" y2="12"/><line x1="9" x2="20" y1="18" y2="18"/><circle cx="4" cy="6" r="1" fill="currentColor"/><circle cx="4" cy="12" r="1" fill="currentColor"/><circle cx="4" cy="18" r="1" fill="currentColor"/>`),
+  listOrdered: icon(`<line x1="10" x2="21" y1="6" y2="6"/><line x1="10" x2="21" y1="12" y2="12"/><line x1="10" x2="21" y1="18" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-2-2-2"/>`),
+  quote:       icon(`<path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z"/>`),
+};
+
+// ------------------------------------------------------------------
 // Helpers
 // ------------------------------------------------------------------
 
 function button(label, title, run) {
   const btn = document.createElement("button");
-  btn.textContent = label;
+  if (label.startsWith("<svg")) {
+    btn.innerHTML = label;
+  } else {
+    btn.textContent = label;
+  }
   btn.title = title;
   btn.type = "button";
   btn.addEventListener("mousedown", (e) => {
@@ -321,7 +345,7 @@ export function menuPlugin(containerSelector = "#toolbar", extConfig = null) {
 
       // ── Link button ────────────────────────────────────────────
       const linkBtn = document.createElement("button");
-      linkBtn.textContent = "🔗";
+      linkBtn.innerHTML   = ICONS.link;
       linkBtn.title       = "Link (Cmd+K)";
       linkBtn.type        = "button";
       linkBtn.addEventListener("mousedown", e => {
@@ -332,9 +356,9 @@ export function menuPlugin(containerSelector = "#toolbar", extConfig = null) {
       });
 
       // ── Stored refs for mark-active tracking ──────────────────
-      const boldBtn   = button("B",   "Bold (Ctrl+B)",        () => run(toggleMark(marks.strong)));
-      const italicBtn = button("I",   "Italic (Ctrl+I)",      () => run(toggleMark(marks.em)));
-      const codeBtn   = button("</>", "Inline Code (Ctrl+`)", () => run(toggleMark(marks.code)));
+      const boldBtn   = button(ICONS.bold,   "Bold (Ctrl+B)",        () => run(toggleMark(marks.strong)));
+      const italicBtn = button(ICONS.italic, "Italic (Ctrl+I)",      () => run(toggleMark(marks.em)));
+      const codeBtn   = button(ICONS.code,   "Inline Code (Ctrl+`)", () => run(toggleMark(marks.code)));
 
       // ── Extension buttons (conditionally shown) ────────────────
       const extGroup1 = [
@@ -372,23 +396,23 @@ export function menuPlugin(containerSelector = "#toolbar", extConfig = null) {
 
       // ── Toolbar items ──────────────────────────────────────────
       const items = [
-        button("↩",      "Undo (Ctrl+Z)",   () => run(undo)),
-        button("↪",      "Redo (Ctrl+Y)",   () => run(redo)),
+        button(ICONS.undo,        "Undo (Ctrl+Z)",   () => run(undo)),
+        button(ICONS.redo,        "Redo (Ctrl+Y)",   () => run(redo)),
         separator(),
         boldBtn,
         italicBtn,
         codeBtn,
         linkBtn,
         separator(),
-        button("¶",       "Paragraph",      () => run(setBlockType(nodes.paragraph))),
-        button("H1",      "Heading 1",      () => run(setBlockType(nodes.heading, { level: 1 }))),
-        button("H2",      "Heading 2",      () => run(setBlockType(nodes.heading, { level: 2 }))),
-        button("H3",      "Heading 3",      () => run(setBlockType(nodes.heading, { level: 3 }))),
+        button("¶",               "Paragraph",      () => run(setBlockType(nodes.paragraph))),
+        button("H1",              "Heading 1",      () => run(setBlockType(nodes.heading, { level: 1 }))),
+        button("H2",              "Heading 2",      () => run(setBlockType(nodes.heading, { level: 2 }))),
+        button("H3",              "Heading 3",      () => run(setBlockType(nodes.heading, { level: 3 }))),
         separator(),
-        button("• List",  "Bullet List",    () => run(wrapInList(nodes.bullet_list))),
-        button("1. List", "Ordered List",   () => run(wrapInList(nodes.ordered_list))),
+        button(ICONS.list,        "Bullet List",    () => run(wrapInList(nodes.bullet_list))),
+        button(ICONS.listOrdered, "Ordered List",   () => run(wrapInList(nodes.ordered_list))),
         separator(),
-        button("❝",       "Blockquote",     () => run(wrapIn(nodes.blockquote))),
+        button(ICONS.quote,       "Blockquote",     () => run(wrapIn(nodes.blockquote))),
         ...(extGroup1.length                    ? [separator(), ...extGroup1]  : []),
         ...(extGroup1.length && extGroup2.length ? [separator()]               : []),
         ...extGroup2,
