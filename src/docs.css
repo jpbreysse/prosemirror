@@ -27,9 +27,7 @@ body {
 
 /* ── Layout ──────────────────────────────────────────────────────────────────*/
 .docs-layout {
-  max-width: 1040px;
-  margin: 0 auto;
-  padding: 2.5rem 1.5rem 4rem;
+  padding: 2.5rem 2rem 4rem;
 }
 
 /* ── Header ──────────────────────────────────────────────────────────────────*/
@@ -494,11 +492,9 @@ body {
 .docs-sidebar-coll-row--active { background: var(--accent); }
 .docs-sidebar-coll-row:hover .docs-sidebar-coll-btns { opacity: 1; }
 
-.docs-sidebar-dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
+.docs-sidebar-coll-icon {
   flex-shrink: 0;
+  display: block;
 }
 
 .docs-sidebar-coll-name {

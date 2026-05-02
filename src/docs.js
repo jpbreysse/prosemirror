@@ -245,7 +245,10 @@ function renderSidebar() {
 
       ${allCollections.map(c => `
         <div class="docs-sidebar-coll-row ${activeView === c.id ? "docs-sidebar-coll-row--active" : ""}" data-view="${c.id}">
-          <span class="docs-sidebar-dot" style="background:${c.color}"></span>
+          <svg class="docs-sidebar-coll-icon" width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M1.5 4a1 1 0 0 1 1-1h3.25l1.25 1.5H12.5a1 1 0 0 1 1 1V11a1 1 0 0 1-1 1h-10a1 1 0 0 1-1-1V4Z"
+              fill="${c.color}20" stroke="${c.color}" stroke-width="1.2" stroke-linejoin="round"/>
+          </svg>
           <span class="docs-sidebar-coll-name">${escHtml(c.name)}</span>
           <span class="docs-sidebar-count">${c.doc_count}</span>
           <span class="docs-sidebar-coll-btns">
@@ -977,7 +980,10 @@ function openAddToCollectionModal() {
           ${allCollections.map(c => `
             <label class="docs-coll-pick-item">
               <input type="radio" name="pickColl" value="${c.id}"/>
-              <span class="docs-sidebar-dot" style="background:${c.color}"></span>
+              <svg class="docs-sidebar-coll-icon" width="15" height="15" viewBox="0 0 15 15" fill="none">
+                <path d="M1.5 4a1 1 0 0 1 1-1h3.25l1.25 1.5H12.5a1 1 0 0 1 1 1V11a1 1 0 0 1-1 1h-10a1 1 0 0 1-1-1V4Z"
+                  fill="${c.color}20" stroke="${c.color}" stroke-width="1.2" stroke-linejoin="round"/>
+              </svg>
               <span class="docs-coll-pick-name">${escHtml(c.name)}</span>
               <span class="docs-coll-pick-count">${c.doc_count} docs</span>
             </label>
