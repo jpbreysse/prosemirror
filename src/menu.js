@@ -360,85 +360,39 @@ export function menuPlugin(containerSelector = "#toolbar", extConfig = null) {
       const italicBtn = button(ICONS.italic, "Italic (Ctrl+I)",      () => run(toggleMark(marks.em)));
       const codeBtn   = button(ICONS.code,   "Inline Code (Ctrl+`)", () => run(toggleMark(marks.code)));
 
-      // ── Extension catalogue (all insertable blocks) ───────────────
-      const EXT_ITEMS = [
-        { key: "graph",           icon: "📊", label: "Chart",              cmd: () => run(insertGraph()) },
-        { key: "map",             icon: "🗺️", label: "Map",                cmd: () => run(insertMap()) },
-        { key: "diagram",         icon: "🔷", label: "Diagram",            cmd: () => run(insertDiagram()) },
-        { key: "product",         icon: "🛍️", label: "Product",            cmd: () => run(insertProduct()) },
-        { key: "table",           icon: "⊞",  label: "Table",              cmd: () => run(insertTable(3, 3)) },
-        { key: "fhir",            icon: "🏥", label: "FHIR Resource",      cmd: () => run(insertFhir()) },
-        { key: "form",            icon: "📋", label: "Form",               cmd: () => run(insertForm()) },
-        { key: "kanban",          icon: "🗂️", label: "Kanban",             cmd: () => run(insertKanban()) },
-        { key: "assetGraph",      icon: "🏭", label: "Asset Graph",        cmd: () => run(insertAssetGraph()) },
-        { key: "carGraph",        icon: "🚗", label: "Drivetrain",         cmd: () => run(insertCarGraph()) },
-        { key: "meetingNotes",    icon: "📅", label: "Meeting Notes",      cmd: () => run(insertMeetingNotes()) },
-        { key: "markdownBlock",   icon: "𝐌↓", label: "Markdown",           cmd: () => run(insertMarkdownBlock()) },
-        { key: "graphBuilder",    icon: "🔷", label: "Graph Builder",      cmd: () => run(insertGraphBuilder()) },
-        { key: "imageBlock",      icon: "🖼",  label: "Image",              cmd: () => run(insertImageBlock()) },
-        { key: "moleculeBlock",   icon: "⚗️", label: "Molecule",           cmd: () => run(insertMoleculeBlock()) },
-        { key: "riskMatrix",      icon: "🎯", label: "Risk Matrix",        cmd: () => run(insertRiskMatrix()) },
-        { key: "customerBlock",   icon: "👤", label: "Customer",           cmd: () => run(insertCustomerBlock()) },
-        { key: "clauseBlock",     icon: "📋", label: "Clause",             cmd: () => run(insertClauseBlock()) },
-        { key: "partyBlock",      icon: "🏢", label: "Party",              cmd: () => run(insertPartyBlock()) },
-        { key: "matterBlock",     icon: "📁", label: "Matter",             cmd: () => run(insertMatterBlock()) },
-        { key: "versionTimeline", icon: "🕓", label: "Version Timeline",   cmd: () => run(insertVersionTimeline()) },
-        { key: "bomBlock",        icon: "⚙️", label: "Bill of Materials",  cmd: () => run(insertBomBlock()) },
-        { key: "maintenanceBlock",icon: "🔧", label: "Maintenance",        cmd: () => run(insertMaintenanceBlock()) },
-        { key: "todoBlock",       icon: "✅", label: "Daily Todo",         cmd: () => run(insertTodoBlock()) },
-        { key: "mermaidBlock",    icon: "🔀", label: "Mermaid Diagram",    cmd: () => run(insertMermaidBlock()) },
-        { key: "assetRef",        icon: "⚙",  label: "Asset Reference",   cmd: () => openAssetRefPicker(editorView) },
-        { key: "reply",           icon: "💬", label: "Reply",              cmd: () => run(insertReply()) },
-      ].filter(e => isOn(e.key));
+      // ── Extension buttons (conditionally shown) ────────────────
+      const extGroup1 = [
+        isOn("graph")    && button("📊",  "Insert Chart",         () => run(insertGraph())),
+        isOn("map")      && button("🗺️", "Insert Map",            () => run(insertMap())),
+        isOn("diagram")  && button("🔷",  "Insert Diagram",       () => run(insertDiagram())),
+        isOn("product")  && button("🛍️", "Insert Product",        () => run(insertProduct())),
+        isOn("table")    && button("⊞",   "Insert Table",         () => run(insertTable(3, 3))),
+        isOn("fhir")     && button("🏥",  "Insert FHIR Resource", () => run(insertFhir())),
+        isOn("form")     && button("📋",  "Insert Form",          () => run(insertForm())),
+        isOn("kanban")   && button("🗂️", "Insert Kanban Board",   () => run(insertKanban())),
+      ].filter(Boolean);
 
-      // ── Insert dropdown ────────────────────────────────────────
-      let insertOpen = false;
-
-      const insertWrap  = document.createElement("div");
-      insertWrap.className = "insert-wrap";
-
-      const insertBtn   = document.createElement("button");
-      insertBtn.type    = "button";
-      insertBtn.className = "insert-trigger";
-      insertBtn.title   = "Insert block";
-      insertBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Insert`;
-
-      const insertPanel = document.createElement("div");
-      insertPanel.className = "insert-panel";
-
-      EXT_ITEMS.forEach(ext => {
-        const item = document.createElement("button");
-        item.type = "button";
-        item.className = "insert-item";
-        item.innerHTML = `<span class="insert-item-icon">${ext.icon}</span><span class="insert-item-label">${ext.label}</span>`;
-        item.addEventListener("mousedown", e => {
-          e.preventDefault();
-          ext.cmd();
-          closeInsert();
-          editorView.focus();
-        });
-        insertPanel.appendChild(item);
-      });
-
-      function closeInsert() {
-        insertPanel.hidden = true;
-        insertOpen = false;
-      }
-
-      insertBtn.addEventListener("mousedown", e => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (insertOpen) { closeInsert(); return; }
-        insertPanel.hidden = false;
-        insertOpen = true;
-      });
-
-      document.addEventListener("mousedown", e => {
-        if (insertOpen && !insertWrap.contains(e.target)) closeInsert();
-      });
-
-      insertPanel.hidden = true;
-      insertWrap.append(insertBtn, insertPanel);
+      const extGroup2 = [
+        isOn("assetGraph")       && button("🏭",  "Insert Asset Graph",          () => run(insertAssetGraph())),
+        isOn("carGraph")         && button("🚗",  "Insert Car Drivetrain",       () => run(insertCarGraph())),
+        isOn("meetingNotes")     && button("📅",  "Insert Meeting Notes",        () => run(insertMeetingNotes())),
+        isOn("markdownBlock")    && button("𝐌↓",  "Insert Markdown Block",       () => run(insertMarkdownBlock())),
+        isOn("graphBuilder")     && button("🔷",  "Insert Graph Builder",        () => run(insertGraphBuilder())),
+        isOn("imageBlock")       && button("🖼",   "Insert Image",               () => run(insertImageBlock())),
+        isOn("moleculeBlock")    && button("⚗️",  "Insert Molecule",             () => run(insertMoleculeBlock())),
+        isOn("riskMatrix")       && button("🎯",  "Insert Risk Matrix",          () => run(insertRiskMatrix())),
+        isOn("customerBlock")    && button("👤",  "Insert Customer Card",        () => run(insertCustomerBlock())),
+        isOn("clauseBlock")      && button("📋",  "Insert Clause Block",         () => run(insertClauseBlock())),
+        isOn("partyBlock")       && button("🏢",  "Insert Party Block",          () => run(insertPartyBlock())),
+        isOn("matterBlock")      && button("📁",  "Insert Matter Block",         () => run(insertMatterBlock())),
+        isOn("versionTimeline")  && button("🕓",  "Insert Version Timeline",     () => run(insertVersionTimeline())),
+        isOn("bomBlock")         && button("⚙️",  "Insert Bill of Materials",    () => run(insertBomBlock())),
+        isOn("maintenanceBlock") && button("🔧",  "Insert Maintenance Schedule", () => run(insertMaintenanceBlock())),
+        isOn("todoBlock")        && button("✅",  "Insert Daily Todo",           () => run(insertTodoBlock())),
+        isOn("mermaidBlock")     && button("🔀",  "Insert Mermaid Diagram",      () => run(insertMermaidBlock())),
+        isOn("assetRef")         && button("⚙",   "Insert Asset Reference",      () => openAssetRefPicker(editorView)),
+        isOn("reply")            && button("💬",  "Add Reply",                   () => run(insertReply())),
+      ].filter(Boolean);
 
       // ── Toolbar items ──────────────────────────────────────────
       const items = [
@@ -459,7 +413,9 @@ export function menuPlugin(containerSelector = "#toolbar", extConfig = null) {
         button(ICONS.listOrdered, "Ordered List",   () => run(wrapInList(nodes.ordered_list))),
         separator(),
         button(ICONS.quote,       "Blockquote",     () => run(wrapIn(nodes.blockquote))),
-        ...(EXT_ITEMS.length ? [separator(), insertWrap] : []),
+        ...(extGroup1.length                    ? [separator(), ...extGroup1]  : []),
+        ...(extGroup1.length && extGroup2.length ? [separator()]               : []),
+        ...extGroup2,
         (() => {
           // User identity pill — shows current user, click to change
           const pill = document.createElement("div");
