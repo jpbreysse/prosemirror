@@ -101,7 +101,7 @@ function buildNavBar(title) {
       </button>
       <div id="saveIndicatorSlot"></div>
     </div>`;
-  document.getElementById("app").prepend(bar);
+  document.getElementById("editor-head").prepend(bar);
 
   bar.querySelector("#saveVersionBtn").addEventListener("click", () => openSaveVersionModal());
   bar.querySelector("#historyBtn").addEventListener("click", () => toggleVersionPanel());
