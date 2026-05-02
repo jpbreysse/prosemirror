@@ -28,9 +28,10 @@
     }
     .nav-title { font-size: 15px; font-weight: 700; flex: 1; }
     .nav-back {
-      display: flex; align-items: center; gap: 4px;
-      color: #6b7280; text-decoration: none; font-size: 13px;
-      padding: 5px 8px; border-radius: 6px; transition: background .15s;
+      display: inline-flex; align-items: center; gap: 5px;
+      color: #71717a; text-decoration: none; font-size: 0.8rem; font-weight: 500;
+      padding: 5px 9px; border-radius: 6px; white-space: nowrap; flex-shrink: 0;
+      transition: background 80ms, color 80ms;
     }
     .nav-back:hover { background: #f4f4f5; color: #18181b; }
     .nav-clear-btn {
@@ -192,6 +193,12 @@
 <body>
 
 <nav class="nav">
+  <a class="nav-back" href="/docs.html">
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+      <path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    Documents
+  </a>
   <div class="nav-logo">
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
       <path d="M3 4h10M3 8h7M3 12h5" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
@@ -203,12 +210,6 @@
   </div>
   <span class="live-dot"></span><span class="live-label">Live</span>
   <button class="nav-clear-btn" id="btnClear">🗑 Clear all</button>
-  <a class="nav-back" href="/docs.html">
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-      <path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
-    Docs
-  </a>
 </nav>
 
 <div class="page">

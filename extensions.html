@@ -24,12 +24,11 @@
       .page-header {
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        margin-bottom: 2rem;
         gap: 1rem;
+        margin-bottom: 2rem;
         flex-wrap: wrap;
       }
-      .page-header-left { display: flex; align-items: center; gap: 1rem; }
+      .page-header-left { display: flex; align-items: center; gap: 1rem; flex: 1; }
       .page-logo {
         width: 36px; height: 36px; border-radius: 9px;
         background: #6366f1;
@@ -40,15 +39,13 @@
       .page-subtitle { font-size: 0.83rem; color: #71717a; margin-top: 2px; }
 
       .back-btn {
-        display: inline-flex; align-items: center; gap: 6px;
-        padding: 8px 14px;
-        border: 1px solid #e2e8f0; border-radius: 8px;
-        background: #fff; color: #374151;
-        font-size: 0.85rem; font-weight: 500; cursor: pointer;
-        text-decoration: none;
-        transition: background 0.12s;
+        display: inline-flex; align-items: center; gap: 5px;
+        padding: 5px 9px; border-radius: 6px;
+        color: #71717a; font-size: 0.8rem; font-weight: 500;
+        text-decoration: none; white-space: nowrap; flex-shrink: 0;
+        transition: background 80ms, color 80ms;
       }
-      .back-btn:hover { background: #f8fafc; }
+      .back-btn:hover { background: #f4f4f5; color: #18181b; }
 
       /* ── Reload notice ── */
       .reload-notice {
@@ -381,6 +378,12 @@
     <div class="layout">
 
       <header class="page-header">
+        <a href="/docs.html" class="back-btn">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+            <path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Documents
+        </a>
         <div class="page-header-left">
           <div class="page-logo">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -392,12 +395,6 @@
             <p class="page-subtitle" id="subtitle">Loading…</p>
           </div>
         </div>
-        <a href="/docs.html" class="back-btn">
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-            <path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          Documents
-        </a>
       </header>
 
       <!-- Reload notice -->
