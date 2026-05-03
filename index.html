@@ -6,11 +6,18 @@
     <title>ProseMirror Editor</title>
   </head>
   <body>
-    <div id="app">
-      <div id="editor-head">
-        <div id="toolbar"></div>
+    <div id="app-shell">
+      <aside id="editor-sidebar"></aside>
+      <div id="app">
+        <div id="editor-head">
+          <div id="toolbar"></div>
+        </div>
+        <div id="editor"></div>
       </div>
-      <div id="editor"></div>
+      <aside id="editor-rail">
+        <div id="rail-props"></div>
+        <div id="docLinksSection"></div>
+      </aside>
     </div>
     <script type="module" src="/src/main.js"></script>
   </body>

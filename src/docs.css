@@ -233,8 +233,7 @@ body {
   background: var(--accent);
   box-shadow: 0 0 0 2px rgba(99,102,241,0.15);
 }
-.docs-card:hover .docs-card-delete,
-.docs-card:hover .docs-card-edit { opacity: 1; }
+.docs-card:hover .docs-card-delete { opacity: 1; }
 
 /* Checkbox — always visible, bigger */
 .docs-card-checkbox-wrap {
@@ -299,16 +298,14 @@ body {
   gap: 3px;
   z-index: 1;
 }
-.docs-card-edit, .docs-card-delete {
+.docs-card-delete {
   display: flex; align-items: center; justify-content: center;
   width: 26px; height: 26px;
   border-radius: 6px; border: none; cursor: pointer;
   opacity: 0;
+  background: transparent; color: var(--muted-foreground);
   transition: opacity 0.15s, background 0.15s;
 }
-.docs-card-edit   { background: var(--muted); color: var(--primary); }
-.docs-card-edit:hover   { background: var(--accent); }
-.docs-card-delete { background: transparent; color: var(--muted-foreground); }
 .docs-card-delete:hover { background: #fee2e2; color: var(--destructive); }
 
 /* ── Buttons ─────────────────────────────────────────────────────────────────*/

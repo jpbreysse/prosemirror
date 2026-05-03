@@ -9,6 +9,7 @@
  */
 
 import "./editor.css";
+import { mountEditorSidebar } from "./editorSidebar.js";
 
 import { extractLines, diffLines, diffStats } from "./utils/diff.js";
 import { EditorState, Plugin } from "prosemirror-state";
@@ -68,7 +69,10 @@ function buildSaveIndicator() {
   const el = document.createElement("div");
   el.id = "save-indicator";
   el.className = "save-indicator";
-  document.getElementById("app").prepend(el);
+  // Slot inside the nav bar if it already exists, otherwise #editor-head
+  const slot = document.getElementById("saveIndicatorSlot");
+  if (slot) slot.appendChild(el);
+  else document.getElementById("editor-head").appendChild(el);
   return {
     saving() { el.textContent = "Saving…"; el.className = "save-indicator saving"; },
     saved()  { el.textContent = "Saved ✓"; el.className = "save-indicator saved";  },
@@ -367,7 +371,7 @@ function toggleVersionPanel(forceOpen) {
   panel = document.createElement("div");
   panel.id = "versionPanel";
   panel.className = "version-panel";
-  document.getElementById("app").appendChild(panel);
+  document.body.appendChild(panel);
   loadVersionPanel(id, panel);
 }
 
@@ -466,6 +470,68 @@ const scratchDoc = schema.node("doc", null, [
     schema.text("Tip: type # for a heading, > for a blockquote, or - for a bullet list."),
   ]),
 ]);
+
+// ── Right rail: document properties ──────────────────────────────────────────
+
+async function mountRailProps(docId) {
+  const rail = document.getElementById("rail-props");
+  if (!rail) return;
+
+  try {
+    const [docRes, collsRes] = await Promise.all([
+      fetch(`/api/docs/${docId}`),
+      fetch("/api/collections"),
+    ]);
+    if (!docRes.ok) return;
+    const doc  = await docRes.json();
+    const colls = collsRes.ok ? await collsRes.json() : [];
+
+    const collection = colls.find(c => c.id === doc.collection_id);
+
+    const fmt = d => d
+      ? new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+      : "—";
+
+    // Rough word count from document JSON
+    function countWords(node) {
+      if (!node) return 0;
+      if (node.text) return node.text.trim().split(/\s+/).filter(Boolean).length;
+      return (node.content || []).reduce((s, n) => s + countWords(n), 0);
+    }
+    const words = countWords(doc.content);
+
+    rail.innerHTML = `
+      <div class="rail-section">
+        <div class="rail-section-label">Document</div>
+        ${collection ? `
+          <div class="rail-prop">
+            <span class="rail-prop-label">Collection</span>
+            <span class="rail-prop-value" style="display:flex;align-items:center;gap:5px">
+              <svg width="12" height="12" viewBox="0 0 15 15" fill="none">
+                <path d="M1.5 4a1 1 0 0 1 1-1h3.25l1.25 1.5H12.5a1 1 0 0 1 1 1V11a1 1 0 0 1-1 1h-10a1 1 0 0 1-1-1V4Z"
+                  fill="${collection.color}20" stroke="${collection.color}" stroke-width="1.2" stroke-linejoin="round"/>
+              </svg>
+              ${collection.name}
+            </span>
+          </div>
+        ` : ""}
+        <div class="rail-prop">
+          <span class="rail-prop-label">Words</span>
+          <span class="rail-prop-value">${words.toLocaleString()}</span>
+        </div>
+        <div class="rail-prop">
+          <span class="rail-prop-label">Created</span>
+          <span class="rail-prop-value">${fmt(doc.created_at)}</span>
+        </div>
+        <div class="rail-prop">
+          <span class="rail-prop-label">Modified</span>
+          <span class="rail-prop-value">${fmt(doc.updated_at)}</span>
+        </div>
+      </div>`;
+  } catch (e) {
+    console.warn("Rail props load failed", e);
+  }
+}
 
 // ── Bootstrap ─────────────────────────────────────────────────────────────────
 
@@ -675,16 +741,23 @@ async function init() {
 
   window.__editorView = view;
 
-  // ── Related documents section ────────────────────────────────────────────────
+  // ── Sidebar + right rail ─────────────────────────────────────────────────────
+  const sidebarEl = document.getElementById("editor-sidebar");
+  if (sidebarEl) mountEditorSidebar(sidebarEl, currentDocId);
+
+  // ── Rail: document properties ────────────────────────────────────────────────
+  if (docId) mountRailProps(docId);
+
+  // ── Rail: related documents section ─────────────────────────────────────────
   if (docId) {
     const { mountDocLinksSection } = await import("./docLinks.js");
-    const linksContainer = document.createElement("div");
-    linksContainer.id = "docLinksSection";
-    document.getElementById("app").appendChild(linksContainer);
-    mountDocLinksSection(linksContainer, docId, {
-      readOnly:  false,
-      fromTitle: savedTitle ?? "",
-    });
+    const linksContainer = document.getElementById("docLinksSection");
+    if (linksContainer) {
+      mountDocLinksSection(linksContainer, docId, {
+        readOnly:  false,
+        fromTitle: savedTitle ?? "",
+      });
+    }
   }
 }
 

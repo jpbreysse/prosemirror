@@ -1,19 +1,64 @@
 /**
  * dragHandlePlugin
  *
- * Shows a ⠿ handle to the left of the hovered top-level block.
- * Dragging the handle moves the block to a new position in the document.
+ * Shows a ⠿ handle and a [+] insert button to the left of the hovered top-level block.
  *
- * Visual feedback:
- *   – Handle appears on hover (fades on mouse-leave)
- *   – Blue drop-indicator line follows the cursor between blocks while dragging
- *   – Dragged block's DOM is slightly faded
+ * [+] opens a Notion-style block-picker menu for inserting new blocks.
+ * [⠿] drag handle moves the block to a new position in the document.
  *
- * Works for every block type: paragraphs, headings, images,
- * kanban boards, graphs, markdown blocks, etc.
+ * Layout (left of block): [+] [⠿]  Block content here...
  */
 
-import { Plugin } from "prosemirror-state";
+import { Plugin, TextSelection } from "prosemirror-state";
+
+// ── Block menu definition ─────────────────────────────────────────────────────
+
+const BLOCK_MENU_SECTIONS = [
+  {
+    label: "Basic blocks",
+    items: [
+      { icon: "¶",   label: "Text",          type: "paragraph" },
+      { icon: "H1",  label: "Heading 1",     type: "heading",      attrs: { level: 1 } },
+      { icon: "H2",  label: "Heading 2",     type: "heading",      attrs: { level: 2 } },
+      { icon: "H3",  label: "Heading 3",     type: "heading",      attrs: { level: 3 } },
+      { icon: "•",   label: "Bullet list",   type: "bullet_list" },
+      { icon: "1.",  label: "Ordered list",  type: "ordered_list" },
+      { icon: "❝",   label: "Quote",         type: "blockquote" },
+      { icon: "</>", label: "Code block",    type: "code_block" },
+      { icon: "—",   label: "Divider",       type: "horizontal_rule" },
+    ],
+  },
+  {
+    label: "Media",
+    items: [
+      { icon: "⬜",  label: "Image",          type: "imageBlock" },
+      { icon: "M↓",  label: "Markdown",       type: "markdownBlock" },
+      { icon: "⬡",   label: "Mermaid diagram",type: "mermaidBlock" },
+    ],
+  },
+  {
+    label: "Documents",
+    items: [
+      { icon: "📋",  label: "Meeting notes",  type: "meetingNotes" },
+      { icon: "☑",   label: "Todo list",      type: "todoBlock" },
+    ],
+  },
+  {
+    label: "Data & Visualization",
+    items: [
+      { icon: "⊞",   label: "Table",          type: "table" },
+      { icon: "📊",  label: "Chart",          type: "graph" },
+      { icon: "🗂",  label: "Kanban",         type: "kanban" },
+      { icon: "⚠",   label: "Risk matrix",    type: "riskMatrix" },
+      { icon: "🔩",  label: "Bill of materials",type: "bomBlock" },
+      { icon: "🔧",  label: "Maintenance",    type: "maintenanceBlock" },
+      { icon: "🗺",  label: "Map",            type: "map" },
+      { icon: "◈",   label: "Diagram",        type: "diagram" },
+    ],
+  },
+];
+
+// ── Plugin ────────────────────────────────────────────────────────────────────
 
 export function dragHandlePlugin() {
   return new Plugin({
@@ -21,13 +66,14 @@ export function dragHandlePlugin() {
       const wrapper = editorView.dom.parentElement;
       wrapper.style.position = "relative";
 
-      // ── DOM elements ────────────────────────────────────────────────────────
+      // ── DOM elements ──────────────────────────────────────────────────────
 
+      // Drag handle ⠿
       const handle = document.createElement("div");
-      handle.className  = "pm-dh";
-      handle.draggable  = true;
-      handle.title      = "Drag to move";
-      handle.innerHTML  = `
+      handle.className = "pm-dh";
+      handle.draggable = true;
+      handle.title     = "Drag to move";
+      handle.innerHTML = `
         <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor">
           <circle cx="3" cy="2.5"  r="1.5"/>
           <circle cx="7" cy="2.5"  r="1.5"/>
@@ -38,18 +84,52 @@ export function dragHandlePlugin() {
         </svg>`;
       wrapper.appendChild(handle);
 
+      // Plus button [+]
+      const plusBtn = document.createElement("div");
+      plusBtn.className = "pm-plus-btn";
+      plusBtn.title     = "Insert block below";
+      plusBtn.innerHTML = `<svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+        <path d="M5 1v8M1 5h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>`;
+      wrapper.appendChild(plusBtn);
+
+      // Drop indicator line
       const dropLine = document.createElement("div");
       dropLine.className     = "pm-drop-line";
       dropLine.style.opacity = "0";
       wrapper.appendChild(dropLine);
 
-      // ── Local state ─────────────────────────────────────────────────────────
+      // Block picker menu (appended to body so it can overflow any container)
+      const blockMenu = document.createElement("div");
+      blockMenu.className    = "pm-block-menu";
+      blockMenu.style.display = "none";
+
+      let menuHTML = `<div class="pm-bm-search-wrap">
+        <input class="pm-bm-search" placeholder="Filter blocks…" autocomplete="off" />
+      </div>`;
+      for (const section of BLOCK_MENU_SECTIONS) {
+        menuHTML += `<div class="pm-bm-section">
+          <div class="pm-bm-label">${section.label}</div>`;
+        for (const item of section.items) {
+          const attrsJson = JSON.stringify(item.attrs || {}).replace(/'/g, "&#39;");
+          menuHTML += `<button class="pm-bm-item" data-type="${item.type}" data-attrs='${attrsJson}'>
+            <span class="pm-bm-icon">${item.icon}</span>
+            <span class="pm-bm-name">${item.label}</span>
+          </button>`;
+        }
+        menuHTML += `</div>`;
+      }
+      blockMenu.innerHTML = menuHTML;
+      document.body.appendChild(blockMenu);
+
+      // ── Local state ───────────────────────────────────────────────────────
 
       let hoveredPos  = null;   // offset of the top-level block under the mouse
       let draggedPos  = null;   // offset of the block being dragged (null = idle)
       let draggedDOM  = null;   // its DOM element (to apply faded style)
+      let menuOpen    = false;
 
-      // ── Helper: find which top-level block the pointer is over ───────────────
+      // ── Helper: find which top-level block the pointer is over ────────────
 
       function blockAtY(clientY) {
         let result = null;
@@ -62,7 +142,7 @@ export function dragHandlePlugin() {
         return result;
       }
 
-      // ── Helper: find the nearest gap between blocks for the drop position ───
+      // ── Helper: find the nearest gap between blocks for drop position ─────
 
       function dropPosAt(clientY) {
         const { doc } = editorView.state;
@@ -84,7 +164,7 @@ export function dragHandlePlugin() {
         return bestPos;
       }
 
-      // ── Helper: show / hide the blue drop-line at a document position ────────
+      // ── Helper: show/hide the blue drop-line at a document position ───────
 
       function showDropLine(pos) {
         const { doc } = editorView.state;
@@ -92,8 +172,8 @@ export function dragHandlePlugin() {
         let dom = null, atTop = false;
 
         doc.forEach((node, offset) => {
-          if (offset === pos)                  { dom = editorView.nodeDOM(offset); atTop = true;  }
-          if (offset + node.nodeSize === pos)  { dom = editorView.nodeDOM(offset); atTop = false; }
+          if (offset === pos)                 { dom = editorView.nodeDOM(offset); atTop = true;  }
+          if (offset + node.nodeSize === pos) { dom = editorView.nodeDOM(offset); atTop = false; }
         });
 
         if (!(dom instanceof Element)) { dropLine.style.opacity = "0"; return; }
@@ -103,7 +183,7 @@ export function dragHandlePlugin() {
         dropLine.style.opacity = "1";
       }
 
-      // ── Helper: dispatch the move transaction ─────────────────────────────────
+      // ── Helper: dispatch the move transaction ─────────────────────────────
 
       function moveBlock(from, to) {
         const { state } = editorView;
@@ -111,47 +191,222 @@ export function dragHandlePlugin() {
         if (!node) return;
 
         const size = node.nodeSize;
-        // Skip if dropping at the same place or adjacent (no-op)
         if (to === from || to === from + size) return;
 
         let tr = state.tr;
         if (to < from) {
-          // Moving UP: insert at target, then delete original (now shifted down)
           tr = tr.insert(to, node);
           tr = tr.delete(from + size, from + 2 * size);
         } else {
-          // Moving DOWN: delete original, then insert at adjusted target
           tr = tr.delete(from, from + size);
           tr = tr.insert(to - size, node);
         }
         editorView.dispatch(tr.scrollIntoView());
       }
 
-      // ── Mouse move on editor: track hovered block, reposition handle ─────────
+      // ── Block insertion ───────────────────────────────────────────────────
+
+      function insertBlock(pos, typeName, attrs) {
+        const { state } = editorView;
+        const { schema } = state;
+        const anchorBlock = state.doc.nodeAt(pos);
+        if (!anchorBlock) return;
+        const insertPos = pos + anchorBlock.nodeSize;
+
+        let newNode;
+        try {
+          if (typeName === "bullet_list" || typeName === "ordered_list") {
+            const para = schema.nodes.paragraph.createAndFill();
+            const item = schema.nodes.list_item.createAndFill(null, para);
+            newNode = schema.nodes[typeName].createAndFill(null, item);
+
+          } else if (typeName === "table") {
+            const mkCell   = () => schema.nodes.table_cell.createAndFill(null, schema.nodes.paragraph.createAndFill());
+            const mkHeader = () => schema.nodes.table_header.createAndFill(null, schema.nodes.paragraph.createAndFill());
+            const hRow = schema.nodes.table_row.createAndFill(null, [mkHeader(), mkHeader(), mkHeader()]);
+            const dRow = () => schema.nodes.table_row.createAndFill(null, [mkCell(), mkCell(), mkCell()]);
+            newNode = schema.nodes.table.createAndFill(null, [hRow, dRow(), dRow()]);
+
+          } else if (typeName === "blockquote") {
+            const para = schema.nodes.paragraph.createAndFill();
+            newNode = schema.nodes.blockquote.createAndFill(null, para);
+
+          } else if (typeName === "horizontal_rule") {
+            newNode = schema.nodes.horizontal_rule.create();
+
+          } else {
+            const nodeType = schema.nodes[typeName];
+            if (!nodeType) { console.warn(`pm-block-menu: unknown type "${typeName}"`); return; }
+            newNode = nodeType.createAndFill(attrs && Object.keys(attrs).length ? attrs : undefined);
+          }
+        } catch (err) {
+          console.warn("pm-block-menu: could not create node", typeName, err);
+          return;
+        }
+
+        if (!newNode) { console.warn("pm-block-menu: createAndFill returned null for", typeName); return; }
+
+        let tr = state.tr.insert(insertPos, newNode);
+
+        // Move cursor inside the new block (works for paragraph, heading, etc.)
+        try {
+          const $pos = tr.doc.resolve(insertPos + 1);
+          tr = tr.setSelection(TextSelection.near($pos));
+        } catch (_) { /* atom nodes — no cursor needed */ }
+
+        editorView.dispatch(tr.scrollIntoView());
+        editorView.focus();
+      }
+
+      // ── Menu open / close ─────────────────────────────────────────────────
+
+      function openMenu() {
+        if (hoveredPos === null) return;
+        menuOpen = true;
+        blockMenu.style.display = "flex";
+
+        // Position below the plus button
+        const btnRect = plusBtn.getBoundingClientRect();
+        let top  = btnRect.bottom + 6;
+        let left = btnRect.left;
+
+        // Reflow to get real dimensions, then clamp to viewport
+        const mw = blockMenu.offsetWidth  || 220;
+        const mh = blockMenu.offsetHeight || 350;
+        if (left + mw > window.innerWidth  - 8) left = window.innerWidth  - mw - 8;
+        if (top  + mh > window.innerHeight - 8) top  = btnRect.top - mh - 4;
+
+        blockMenu.style.left = `${left}px`;
+        blockMenu.style.top  = `${top}px`;
+
+        const searchEl = blockMenu.querySelector(".pm-bm-search");
+        if (searchEl) { searchEl.value = ""; filterMenu(""); searchEl.focus(); }
+      }
+
+      function closeMenu() {
+        if (!menuOpen) return;
+        menuOpen = false;
+        blockMenu.style.display = "none";
+      }
+
+      function filterMenu(query) {
+        const q = query.toLowerCase().trim();
+        blockMenu.querySelectorAll(".pm-bm-item").forEach(item => {
+          const name = item.querySelector(".pm-bm-name").textContent.toLowerCase();
+          item.style.display = (!q || name.includes(q)) ? "" : "none";
+        });
+        blockMenu.querySelectorAll(".pm-bm-section").forEach(section => {
+          const hasVisible = [...section.querySelectorAll(".pm-bm-item")].some(i => i.style.display !== "none");
+          section.style.display = hasVisible ? "" : "none";
+        });
+      }
+
+      // ── Menu event listeners ──────────────────────────────────────────────
+
+      plusBtn.addEventListener("mousedown", e => {
+        e.preventDefault(); // prevent editor blur
+        e.stopPropagation();
+      });
+
+      plusBtn.addEventListener("click", e => {
+        e.stopPropagation();
+        menuOpen ? closeMenu() : openMenu();
+      });
+
+      blockMenu.addEventListener("mousedown", e => {
+        e.preventDefault(); // prevent editor blur when clicking menu
+      });
+
+      blockMenu.addEventListener("click", e => {
+        const item = e.target.closest(".pm-bm-item");
+        if (!item) return;
+        e.stopPropagation();
+        const typeName = item.dataset.type;
+        const attrs    = JSON.parse(item.dataset.attrs || "{}");
+        const posToInsert = hoveredPos;
+        closeMenu();
+        if (posToInsert !== null) insertBlock(posToInsert, typeName, attrs);
+      });
+
+      const searchInput = blockMenu.querySelector(".pm-bm-search");
+      searchInput.addEventListener("input", e => filterMenu(e.target.value));
+
+      searchInput.addEventListener("keydown", e => {
+        if (e.key === "Escape") { closeMenu(); editorView.focus(); e.preventDefault(); return; }
+        if (e.key === "Enter") {
+          const first = [...blockMenu.querySelectorAll(".pm-bm-item")].find(i => i.style.display !== "none");
+          if (first) first.click();
+          e.preventDefault();
+          return;
+        }
+        if (e.key === "ArrowDown") {
+          const items = [...blockMenu.querySelectorAll(".pm-bm-item")].filter(i => i.style.display !== "none");
+          if (items.length) { items[0].focus(); }
+          e.preventDefault();
+        }
+      });
+
+      blockMenu.addEventListener("keydown", e => {
+        if (e.key === "Escape") { closeMenu(); editorView.focus(); e.preventDefault(); return; }
+        if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+          const items = [...blockMenu.querySelectorAll(".pm-bm-item")].filter(i => i.style.display !== "none");
+          const idx   = items.indexOf(document.activeElement);
+          if (e.key === "ArrowDown" && idx < items.length - 1) items[idx + 1].focus();
+          if (e.key === "ArrowUp") {
+            if (idx > 0) items[idx - 1].focus();
+            else searchInput.focus();
+          }
+          e.preventDefault();
+        }
+      });
+
+      // Close on outside click
+      document.addEventListener("mousedown", function onOutside(e) {
+        if (menuOpen && !blockMenu.contains(e.target) && e.target !== plusBtn) closeMenu();
+      });
+
+      // ── Mouse move: track block, reposition handle + plusBtn ──────────────
 
       editorView.dom.addEventListener("mousemove", e => {
-        if (draggedPos !== null) return; // don't repositon while dragging
+        if (draggedPos !== null) return;
 
         const pos = blockAtY(e.clientY);
-        if (pos === null) { handle.style.opacity = "0"; return; }
+        if (pos === null) {
+          handle.style.opacity  = "0";
+          plusBtn.style.opacity = "0";
+          return;
+        }
         hoveredPos = pos;
 
         const dom = editorView.nodeDOM(pos);
-        if (!(dom instanceof Element)) { handle.style.opacity = "0"; return; }
+        if (!(dom instanceof Element)) {
+          handle.style.opacity  = "0";
+          plusBtn.style.opacity = "0";
+          return;
+        }
 
         const wRect = wrapper.getBoundingClientRect();
         const nRect = dom.getBoundingClientRect();
+        const top   = nRect.top - wRect.top + nRect.height / 2 - 10;
+        const left  = nRect.left - wRect.left;
 
         handle.style.opacity = "1";
-        handle.style.top  = `${nRect.top - wRect.top + nRect.height / 2 - 10}px`;
-        handle.style.left = `${nRect.left - wRect.left - 28}px`;
+        handle.style.top     = `${top}px`;
+        handle.style.left    = `${left - 28}px`;
+
+        plusBtn.style.opacity = "1";
+        plusBtn.style.top     = `${top}px`;
+        plusBtn.style.left    = `${left - 52}px`;
       });
 
       editorView.dom.addEventListener("mouseleave", () => {
-        if (draggedPos === null) handle.style.opacity = "0";
+        if (draggedPos === null) {
+          handle.style.opacity  = "0";
+          plusBtn.style.opacity = "0";
+        }
       });
 
-      // ── Handle: drag start ────────────────────────────────────────────────────
+      // ── Handle: drag start ────────────────────────────────────────────────
 
       handle.addEventListener("dragstart", e => {
         if (hoveredPos === null) { e.preventDefault(); return; }
@@ -161,28 +416,27 @@ export function dragHandlePlugin() {
         if (draggedDOM instanceof Element) draggedDOM.classList.add("pm-block-dragging");
 
         e.dataTransfer.effectAllowed = "move";
-        e.dataTransfer.setData("text/plain", "pm-block-drag");
 
-        // Minimal ghost image so it doesn't obscure the drop target
-        const ghost = document.createElement("div");
-        ghost.style.cssText =
-          "position:fixed;left:-9999px;padding:5px 12px;background:#1e293b;color:#fff;" +
-          "border-radius:6px;font-size:12px;font-family:system-ui;white-space:nowrap";
-        ghost.textContent = "Moving block…";
-        document.body.appendChild(ghost);
-        e.dataTransfer.setDragImage(ghost, 60, 14);
-        setTimeout(() => ghost.remove(), 0);
+        // Suppress the browser's default drag ghost — the faded block (pm-block-dragging)
+        // and the blue drop-line already give enough visual feedback.
+        // A 1×1 blank canvas is the most reliable cross-browser way to do this.
+        const blank = document.createElement("canvas");
+        blank.width = blank.height = 1;
+        document.body.appendChild(blank);
+        e.dataTransfer.setDragImage(blank, 0, 0);
+        setTimeout(() => blank.remove(), 0);
       });
 
       handle.addEventListener("dragend", () => {
         if (draggedDOM instanceof Element) draggedDOM.classList.remove("pm-block-dragging");
         draggedPos = null;
         draggedDOM = null;
-        handle.style.opacity  = "0";
+        handle.style.opacity   = "0";
+        plusBtn.style.opacity  = "0";
         dropLine.style.opacity = "0";
       });
 
-      // ── Editor: dragover — show the drop-line indicator ───────────────────────
+      // ── Editor: dragover — show the drop-line indicator ───────────────────
 
       editorView.dom.addEventListener("dragover", e => {
         if (draggedPos === null) return;
@@ -195,7 +449,7 @@ export function dragHandlePlugin() {
         if (draggedPos !== null) dropLine.style.opacity = "0";
       });
 
-      // ── Editor: drop — commit the move ────────────────────────────────────────
+      // ── Editor: drop — commit the move ────────────────────────────────────
 
       editorView.dom.addEventListener("drop", e => {
         if (draggedPos === null) return;
@@ -205,19 +459,21 @@ export function dragHandlePlugin() {
         const to = dropPosAt(e.clientY);
         dropLine.style.opacity = "0";
 
-        // Execute move
         if (to !== null) moveBlock(draggedPos, to);
 
         if (draggedDOM instanceof Element) draggedDOM.classList.remove("pm-block-dragging");
         draggedPos = null;
         draggedDOM = null;
-        handle.style.opacity = "0";
+        handle.style.opacity  = "0";
+        plusBtn.style.opacity = "0";
       });
 
       return {
         destroy() {
           handle.remove();
+          plusBtn.remove();
           dropLine.remove();
+          blockMenu.remove();
         },
       };
     },

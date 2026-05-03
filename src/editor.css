@@ -40,26 +40,215 @@
 body {
   margin: 0;
   font-family: system-ui, sans-serif;
-  background: var(--muted);
+  background: var(--background);
   height: 100dvh;
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 2rem 1rem;
 }
 
-#app {
-  width: 100%;
-  max-width: 800px;
-  background: var(--card);
-  border-radius: calc(var(--radius) + 2px);
-  box-shadow: 0 1px 3px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06);
-  border: 1px solid var(--border);
-  /* scroll container — enables sticky children */
+/* ── IDE shell — full-viewport flex row ─────────────────────────── */
+
+#app-shell {
+  display: flex;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+/* ── Left sidebar column ────────────────────────────────────────── */
+
+#editor-sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  height: 100dvh;
   overflow-y: auto;
+  background: var(--card);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Centre — main editor column ────────────────────────────────── */
+
+#app {
   flex: 1;
-  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--background);
+  position: relative; /* anchor for table overlay buttons */
+}
+
+/* ── Right metadata rail ────────────────────────────────────────── */
+
+#editor-rail {
+  width: 260px;
+  flex-shrink: 0;
+  height: 100dvh;
+  overflow-y: auto;
+  background: var(--card);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 1.25rem 1rem;
+  gap: 0;
+}
+
+.rail-section {
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1.25rem;
+}
+.rail-section:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+
+.rail-section-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 10px;
+}
+
+.rail-prop {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 10px;
+}
+.rail-prop:last-child { margin-bottom: 0; }
+
+.rail-prop-label {
+  font-size: 0.69rem;
+  color: var(--muted-foreground);
+  font-weight: 500;
+}
+.rail-prop-value {
+  font-size: 0.8rem;
+  color: var(--foreground);
+  font-weight: 400;
+}
+
+/* ── Sidebar inner components (shared with docs.html) ──────────── */
+
+.docs-sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 18px 14px 14px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.docs-sidebar-brand {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--foreground);
+  letter-spacing: -0.01em;
+}
+
+.docs-sidebar-nav {
+  flex: 1;
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  overflow-y: auto;
+}
+
+.docs-sidebar-section-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 6px 8px 3px;
+}
+
+.docs-sidebar-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 6px 0;
+}
+
+.docs-sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  padding: 7px 10px;
+  border: none;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--muted-foreground);
+  font-size: 0.83rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  text-decoration: none;
+  transition: background 0.12s, color 0.12s;
+}
+.docs-sidebar-item:hover { background: var(--muted); color: var(--foreground); }
+.docs-sidebar-item--active { background: var(--accent); color: var(--accent-foreground); font-weight: 600; }
+
+.docs-sidebar-count {
+  margin-left: auto;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  background: var(--muted);
+  border-radius: 20px;
+  padding: 1px 7px;
+  flex-shrink: 0;
+}
+.docs-sidebar-item--active .docs-sidebar-count { background: var(--accent); color: var(--accent-foreground); }
+
+.docs-sidebar-coll-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.12s;
+}
+.docs-sidebar-coll-row:hover { background: var(--muted); }
+
+.docs-sidebar-coll-icon { flex-shrink: 0; display: block; }
+
+.docs-sidebar-coll-name {
+  flex: 1;
+  font-size: 0.83rem;
+  font-weight: 500;
+  color: var(--foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.docs-sidebar-footer {
+  padding: 12px 14px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 14px;
+  flex-shrink: 0;
+}
+.docs-sidebar-footer-link {
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+  text-decoration: none;
+  transition: color 0.12s;
+}
+.docs-sidebar-footer-link:hover { color: var(--primary); }
+
+/* doc name span inside recent-doc items — truncates long titles */
+.es-doc-name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 /* ── Sticky header (nav + toolbar) ─────────────────────────────── */
@@ -135,8 +324,10 @@ body {
 /* ── Editor content area ───────────────────────────────────────── */
 
 #editor {
-  padding: 1.5rem 2rem;
-  min-height: 500px;
+  flex: 1;
+  overflow-y: auto;
+  padding: 2rem 3rem 2rem 4rem; /* 4rem left gutter fits [+][⠿] buttons */
+  min-height: 0;
   outline: none;
 }
 
@@ -148,6 +339,8 @@ body {
   font-size: 1rem;
   color: var(--foreground);
   caret-color: var(--primary);
+  max-width: 720px;
+  margin: 0 auto;
 }
 
 /* ── Link mark ─────────────────────────────────────────────────── */
@@ -988,7 +1181,9 @@ body {
 /* ── Table hover buttons ────────────────────────────────────────── */
 
 /* Row "+" button — appears to the left of each hovered row */
-.table-row-add-btn {
+/* ── Shared table overlay base ──────────────────────────────────── */
+.table-row-add-btn,
+.table-row-del-btn {
   position: absolute;
   display: flex;
   align-items: center;
@@ -998,24 +1193,57 @@ body {
   border-radius: 50%;
   border: 1.5px solid #c7d2fe;
   background: #fff;
-  color: #6366f1;
-  font-size: .95rem;
+  font-size: .9rem;
   font-weight: 700;
   cursor: pointer;
-  z-index: 100;
+  z-index: 110;
   line-height: 1;
   padding: 0;
   transition: background .1s, border-color .1s, transform .1s;
-  box-shadow: 0 1px 4px rgba(99,102,241,.15);
-}
-.table-row-add-btn:hover {
-  background: #6366f1;
-  border-color: #6366f1;
-  color: #fff;
-  transform: scale(1.15);
+  box-shadow: 0 1px 4px rgba(0,0,0,.10);
 }
 
-/* Bottom "Add row" bar — overlaps the bottom of the table */
+/* Row "+" (add below) */
+.table-row-add-btn { color: #6366f1; }
+.table-row-add-btn:hover {
+  background: #6366f1; border-color: #6366f1; color: #fff; transform: scale(1.15);
+}
+
+/* Row "×" (delete) */
+.table-row-del-btn { color: #a1a1aa; border-color: #e4e4e7; }
+.table-row-del-btn:hover {
+  background: #fef2f2; border-color: #fca5a5; color: #ef4444; transform: scale(1.15);
+}
+
+/* ── Column controls bar (above hovered header) ─────────────────── */
+.table-col-bar {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 3px;
+  padding: 0 3px;
+  height: 26px;
+  z-index: 110;
+  background: rgba(238,242,255,0.96);
+  border: 1.5px solid #c7d2fe;
+  border-radius: 6px 6px 0 0;
+  backdrop-filter: blur(2px);
+  box-sizing: border-box;
+}
+.table-col-bar button {
+  display: inline-flex; align-items: center; gap: 4px;
+  border: none; background: transparent; cursor: pointer;
+  font-size: .72rem; font-weight: 600; padding: 2px 7px;
+  border-radius: 4px; transition: background .1s, color .1s;
+  white-space: nowrap;
+}
+.table-col-del-btn { color: #a1a1aa; }
+.table-col-del-btn:hover { background: #fef2f2; color: #ef4444; }
+.table-col-add-btn { color: #6366f1; }
+.table-col-add-btn:hover { background: #eef2ff; color: #4338ca; }
+
+/* ── Bottom "Add row" bar ────────────────────────────────────────── */
 .table-bottom-add-btn {
   position: absolute;
   display: flex;
@@ -1030,21 +1258,35 @@ body {
   font-size: .78rem;
   font-weight: 600;
   cursor: pointer;
-  z-index: 100;
+  z-index: 110;
   transition: background .1s, border-color .1s;
   box-sizing: border-box;
   backdrop-filter: blur(2px);
 }
-.table-bottom-add-btn:hover {
-  background: #eef2ff;
-  border-color: #6366f1;
-}
+.table-bottom-add-btn:hover { background: #eef2ff; border-color: #6366f1; }
+.table-bottom-add-icon { font-size: 1rem; font-weight: 700; line-height: 1; }
 
-.table-bottom-add-icon {
-  font-size: 1rem;
-  font-weight: 700;
-  line-height: 1;
+/* ── Right "Add column" button ───────────────────────────────────── */
+.table-right-add-btn {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 9px;
+  height: 26px;
+  border: 1.5px solid #c7d2fe;
+  border-radius: 6px;
+  background: rgba(238,242,255,0.95);
+  color: #6366f1;
+  font-size: .75rem;
+  font-weight: 600;
+  cursor: pointer;
+  z-index: 110;
+  white-space: nowrap;
+  transition: background .1s, border-color .1s;
+  backdrop-filter: blur(2px);
 }
+.table-right-add-btn:hover { background: #eef2ff; border-color: #6366f1; }
 
 /* ── Contextual table toolbar ───────────────────────────────────── */
 
@@ -4592,6 +4834,123 @@ input.imgb-caption::placeholder { color: #cbd5e1; }
   transition: opacity 0.1s;
 }
 
+/* ── Plus insert button ──────────────────────────────────────────────────── */
+.pm-plus-btn {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0;
+  color: #a1a1aa;
+  transition: opacity 0.15s, color 0.1s, background 0.1s;
+  user-select: none;
+  z-index: 10;
+}
+.pm-plus-btn:hover {
+  color: #6366f1;
+  background: #eef2ff;
+  opacity: 1 !important;
+}
+
+/* ── Block picker menu ───────────────────────────────────────────────────── */
+.pm-block-menu {
+  position: fixed;
+  z-index: 9999;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(15, 23, 42, 0.12), 0 2px 8px rgba(15, 23, 42, 0.06);
+  width: 224px;
+  max-height: 400px;
+  overflow-y: auto;
+  display: none;
+  flex-direction: column;
+  padding: 6px 6px 8px;
+  gap: 0;
+}
+.pm-bm-search-wrap {
+  padding: 2px 0 6px;
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 1;
+}
+.pm-bm-search {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 0.8125rem;
+  font-family: system-ui, sans-serif;
+  outline: none;
+  color: #1e293b;
+  background: #f8fafc;
+  transition: border-color 0.15s;
+}
+.pm-bm-search:focus {
+  border-color: #6366f1;
+  background: #fff;
+}
+.pm-bm-section {
+  margin-top: 4px;
+}
+.pm-bm-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 4px 8px 2px;
+}
+.pm-bm-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 5px 8px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-family: system-ui, sans-serif;
+  color: #1e293b;
+  text-align: left;
+  transition: background 0.1s;
+}
+.pm-bm-item:hover,
+.pm-bm-item:focus {
+  background: #f1f5f9;
+  outline: none;
+}
+.pm-bm-item:focus-visible {
+  background: #eef2ff;
+  outline: 2px solid #6366f1;
+  outline-offset: -2px;
+}
+.pm-bm-icon {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+  background: #f1f5f9;
+  color: #6366f1;
+  flex-shrink: 0;
+}
+.pm-bm-name {
+  color: #334155;
+  font-weight: 450;
+}
+
 /* ── Customer Block ───────────────────────────────────────────────────────── */
 
 .cb-block {
@@ -6428,8 +6787,7 @@ input.imgb-caption::placeholder { color: #cbd5e1; }
 /* ── Document links section ─────────────────────────────────────────────────── */
 
 #docLinksSection {
-  margin-top: 28px;
-  padding-bottom: 32px;
+  flex: 1;
 }
 
 .doc-links-section {

@@ -631,11 +631,7 @@ function renderCard(doc) {
             <circle cx="9.5" cy="4.5" r="1" fill="currentColor"/>
           </svg>
         </button>
-        <button class="docs-card-edit" data-id="${doc.id}" title="Open in editor">
-          <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
-            <path d="M9.5 2.5l2 2L4 12H2v-2L9.5 2.5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
-          </svg>
-        </button>
+
         <button class="docs-card-delete" data-id="${doc.id}" data-title="${escHtml(doc.title || "Untitled")}" title="Delete document">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
             <path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
@@ -726,14 +722,7 @@ function wireEvents() {
   grid.addEventListener("click", e => {
     if (e.target.closest(".docs-card-checkbox-wrap, .docs-card-edit, .docs-card-delete, .docs-card-tags-btn, .docs-card-coll-btn, .docs-tag--clickable")) return;
     const card = e.target.closest(".docs-card[data-id]");
-    if (card) readDoc(card.dataset.id);
-  });
-
-  grid.addEventListener("click", e => {
-    const btn = e.target.closest(".docs-card-edit");
-    if (!btn) return;
-    e.stopPropagation();
-    openDoc(btn.dataset.id);
+    if (card) openDoc(card.dataset.id);
   });
 
   grid.addEventListener("click", async e => {
