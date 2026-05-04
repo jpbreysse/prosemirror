@@ -130,15 +130,32 @@ export function dragHandlePlugin() {
       let menuOpen    = false;
 
       // ── Helper: find which top-level block the pointer is over ────────────
+      // Uses nearest-block logic so the handle stays visible in the gaps
+      // between blocks (which can be 16–20 px with typical margins).
 
       function blockAtY(clientY) {
-        let result = null;
+        let result   = null;
+        let bestDist = Infinity;
+
         editorView.state.doc.forEach((node, offset) => {
           const dom = editorView.nodeDOM(offset);
           if (!(dom instanceof Element)) return;
           const r = dom.getBoundingClientRect();
-          if (clientY >= r.top - 4 && clientY <= r.bottom + 4) result = offset;
+
+          // Cursor is directly inside the block — perfect match
+          if (clientY >= r.top && clientY <= r.bottom) {
+            if (bestDist > 0) { bestDist = 0; result = offset; }
+            return;
+          }
+
+          // Cursor is outside — find nearest block within 60 px
+          const dist = clientY < r.top ? r.top - clientY : clientY - r.bottom;
+          if (dist < bestDist && dist < 60) {
+            bestDist = dist;
+            result   = offset;
+          }
         });
+
         return result;
       }
 
@@ -165,6 +182,9 @@ export function dragHandlePlugin() {
       }
 
       // ── Helper: show/hide the blue drop-line at a document position ───────
+      // Must add wrapper.scrollTop because the line is position:absolute inside
+      // the scroll container (#editor), so its top is relative to content-top
+      // not the visible viewport top.
 
       function showDropLine(pos) {
         const { doc } = editorView.state;
@@ -178,7 +198,7 @@ export function dragHandlePlugin() {
 
         if (!(dom instanceof Element)) { dropLine.style.opacity = "0"; return; }
         const nRect = dom.getBoundingClientRect();
-        const y     = (atTop ? nRect.top : nRect.bottom) - wRect.top;
+        const y     = (atTop ? nRect.top : nRect.bottom) - wRect.top + wrapper.scrollTop;
         dropLine.style.top     = `${y}px`;
         dropLine.style.opacity = "1";
       }
@@ -385,10 +405,14 @@ export function dragHandlePlugin() {
           return;
         }
 
-        const wRect = wrapper.getBoundingClientRect();
-        const nRect = dom.getBoundingClientRect();
-        const top   = nRect.top - wRect.top + nRect.height / 2 - 10;
-        const left  = nRect.left - wRect.left;
+        const wRect     = wrapper.getBoundingClientRect();
+        const nRect     = dom.getBoundingClientRect();
+        // Add wrapper.scrollTop: handle is position:absolute inside the scroll
+        // container, so its top is relative to the content-box top, not the
+        // visible viewport top.
+        const scrollTop = wrapper.scrollTop;
+        const top       = nRect.top - wRect.top + scrollTop + nRect.height / 2 - 10;
+        const left      = nRect.left - wRect.left;
 
         handle.style.opacity = "1";
         handle.style.top     = `${top}px`;
@@ -399,11 +423,29 @@ export function dragHandlePlugin() {
         plusBtn.style.left    = `${left - 52}px`;
       });
 
-      editorView.dom.addEventListener("mouseleave", () => {
+      editorView.dom.addEventListener("mouseleave", e => {
         if (draggedPos === null) {
+          // Don't hide when the mouse moves onto the handle or plus button —
+          // that's the normal grab gesture. They maintain their own visibility.
+          const to = e.relatedTarget;
+          if (to === handle || handle.contains(to) ||
+              to === plusBtn || plusBtn.contains(to)) return;
           handle.style.opacity  = "0";
           plusBtn.style.opacity = "0";
         }
+      });
+
+      // Keep handle/plusBtn visible while the mouse is on them
+      // (JS opacity:"0" would otherwise win over CSS :hover on the way in)
+      handle.addEventListener("mouseenter", () => {
+        if (hoveredPos === null) return;
+        handle.style.opacity  = "1";
+        plusBtn.style.opacity = "1";
+      });
+      plusBtn.addEventListener("mouseenter", () => {
+        if (hoveredPos === null) return;
+        handle.style.opacity  = "1";
+        plusBtn.style.opacity = "1";
       });
 
       // ── Handle: drag start ────────────────────────────────────────────────
