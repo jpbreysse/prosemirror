@@ -22,6 +22,15 @@ const LINK_LABELS = {
   closes:        'Closes',
 };
 
+// Edge colours — kept in sync with docGraph.js EDGE_META
+const EDGE_COLORS = {
+  references:    '#6366f1',
+  supersedes:    '#f59e0b',
+  superseded_by: '#d97706',
+  implements:    '#10b981',
+  closes:        '#ef4444',
+};
+
 // link types the user can explicitly choose when adding a link.
 // 'superseded_by' is excluded — it is only ever created as an automatic inverse.
 const CREATABLE_LINK_TYPES = ['references', 'supersedes', 'implements', 'closes'];
@@ -192,16 +201,16 @@ async function render(containerEl, docId, readOnly, fromTitle) {
     const targetTitle = side === 'out' ? (link.to_title || link.to_doc)
                                         : (link.from_title || link.from_doc);
     const label = LINK_LABELS[link.link_type] ?? link.link_type;
+    const color = EDGE_COLORS[link.link_type] ?? '#6b7280';
 
     const unlinkBtn = (!readOnly && side === 'out') ? `
       <button class="dls-unlink-btn" data-link-id="${esc(link.id)}"
-              data-link-title="${esc(targetTitle)}" title="Remove link">
-        unlink
-      </button>` : '';
+              data-link-title="${esc(targetTitle)}" title="Remove link">✕</button>` : '';
 
     return `
       <li class="dls-row">
-        <span class="dls-badge">${esc(label)}</span>
+        <span class="dls-dot" style="background:${color}" title="${esc(label)}"></span>
+        <span class="dls-type" style="color:${color}">${esc(label)}</span>
         <a class="dls-link" href="${readerHref(targetId)}"
            title="${esc(targetTitle)}">${esc(targetTitle)}</a>
         ${unlinkBtn}
@@ -220,28 +229,48 @@ async function render(containerEl, docId, readOnly, fromTitle) {
       <ul class="dls-list">${incoming.map(l => renderRow(l, 'in')).join('')}</ul>
     </div>` : '';
 
-  const emptyHtml = (!outgoing.length && !incoming.length) ? `
-    <p class="dls-empty">No related documents.${readOnly ? '' : ' Use "+ Add link" to connect this document to another.'}</p>` : '';
+  const countBadge = total > 0
+    ? `<span class="dls-count-badge">${total}</span>`
+    : '';
 
-  const addBtn = readOnly ? '' : `
-    <button class="dls-add-btn" id="dlsAddBtn">+ Add link</button>`;
+  const graphBtn = total > 0 ? `
+    <button class="dls-graph-btn" id="dlsGraphBtn" title="View knowledge graph">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+        <circle cx="3"  cy="8"  r="2"/>
+        <circle cx="13" cy="3"  r="2"/>
+        <circle cx="13" cy="13" r="2"/>
+        <line x1="5"  y1="7.2" x2="11" y2="4"/>
+        <line x1="5"  y1="8.8" x2="11" y2="12"/>
+      </svg>
+    </button>` : '';
+
+  const addBtnHeader = (!readOnly && total > 0) ? `
+    <button class="dls-add-btn" id="dlsAddBtn">+ Add</button>` : '';
+
+  const emptyHtml = (!outgoing.length && !incoming.length) ? `
+    <div class="dls-empty-state">
+      <svg class="dls-empty-icon" width="30" height="30" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="5"  cy="12" r="2.5"/>
+        <circle cx="19" cy="5"  r="2.5"/>
+        <circle cx="19" cy="19" r="2.5"/>
+        <line x1="7.3"  y1="11" x2="16.7" y2="6.4"/>
+        <line x1="7.3"  y1="13" x2="16.7" y2="17.6"/>
+      </svg>
+      <p class="dls-empty-label">No links yet</p>
+      ${!readOnly ? `<button class="dls-empty-cta" id="dlsAddBtn">+ Add your first link</button>` : ''}
+    </div>` : '';
 
   containerEl.innerHTML = `
     <div class="doc-links-section">
       <div class="dls-header">
-        <span class="dls-title">Related documents <span class="dls-count">(${total})</span></span>
+        <div class="dls-header-left">
+          <span class="dls-title">Related documents</span>
+          ${countBadge}
+        </div>
         <div class="dls-header-actions">
-          <button class="dls-graph-btn" id="dlsGraphBtn" title="View knowledge graph">
-            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
-              <circle cx="3"  cy="8"  r="2"/>
-              <circle cx="13" cy="3"  r="2"/>
-              <circle cx="13" cy="13" r="2"/>
-              <line x1="5"  y1="7.2" x2="11" y2="4"/>
-              <line x1="5"  y1="8.8" x2="11" y2="12"/>
-            </svg>
-            Graph
-          </button>
-          ${addBtn}
+          ${graphBtn}
+          ${addBtnHeader}
         </div>
       </div>
       ${outHtml}
