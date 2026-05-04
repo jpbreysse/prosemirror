@@ -65,21 +65,43 @@ GRANT ALL PRIVILEGES ON DATABASE myproject TO myproject;
 
 ## 4. Tables
 
-All 11 tables live in the `myproject` database under the `public` schema.
+All tables live in the `myproject` database under the `public` schema.
 
-| Table | Created by | Purpose |
+### ProseMirror tables — created by `server.js` on start
+
+| Table | Purpose |
+|---|---|
+| `pm_documents` | Editor documents (ProseMirror JSON) |
+| `pm_document_versions` | Version snapshots per document |
+| `pm_document_link` | Typed directed links between documents (references, supersedes, implements, closes) |
+| `pm_collections` | Named folders that group documents |
+| `pm_collection_docs` | Many-to-many join between collections and documents |
+| `pm_connectors` | Registry of external systems proxied by the API |
+| `pm_extension_config` | Workspace-level on/off toggles for editor extensions |
+| `pm_audit_log` | Append-only record of every API request |
+| `pm_asset_document_mention` | Index of asset references found inside documents |
+| `lci_workshops` | Lummus engagement discovery workshops |
+| `lci_participants` | Workshop participants |
+| `lci_questions` | Discussion questions per workshop |
+
+### LexAPI tables — created by LexAPI migrations
+
+| Table | Migration | Purpose |
 |---|---|---|
-| `pm_documents` | `server.js` on start | Editor documents (ProseMirror JSON) |
-| `pm_document_versions` | `server.js` on start | Version snapshots per document |
-| `clauses` | LexAPI migration `001_clauses.sql` | Clause library |
-| `clause_versions` | LexAPI migration `001_clauses.sql` | Clause change history |
-| `matters` | LexAPI migration `002_matters_parties.sql` | Legal matters |
-| `parties` | LexAPI migration `002_matters_parties.sql` | Legal parties (companies, individuals) |
-| `matter_clauses` | LexAPI migration `002_matters_parties.sql` | Clauses attached to a matter |
-| `matter_parties` | LexAPI migration `002_matters_parties.sql` | Parties linked to a matter |
-| `customers` | CustomerAPI migration `001_customers.sql` | CRM customers |
-| `assets` | CustomerAPI migration `002_assets.sql` | Assets per customer |
-| `interactions` | CustomerAPI migration `002_assets.sql` | Customer interactions |
+| `clauses` | `001_clauses.sql` | Clause library |
+| `clause_versions` | `001_clauses.sql` | Clause change history |
+| `matters` | `002_matters_parties.sql` | Legal matters |
+| `parties` | `002_matters_parties.sql` | Legal parties (companies, individuals) |
+| `matter_clauses` | `002_matters_parties.sql` | Clauses attached to a matter |
+| `matter_parties` | `002_matters_parties.sql` | Parties linked to a matter |
+
+### CustomerAPI tables — created by CustomerAPI migrations
+
+| Table | Migration | Purpose |
+|---|---|---|
+| `customers` | `001_customers.sql` | CRM customers |
+| `assets` | `002_assets.sql` | Assets per customer |
+| `interactions` | `002_assets.sql` | Customer interactions |
 
 ### How tables are created
 
