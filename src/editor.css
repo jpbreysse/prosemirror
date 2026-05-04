@@ -4811,21 +4811,23 @@ input.imgb-caption::placeholder { color: #cbd5e1; }
   position: absolute;
   left: 0;
   right: 0;
-  height: 2px;
+  height: 3px;
   background: #6366f1;
   pointer-events: none;
   z-index: 20;
-  transition: top 0.05s;
+  transition: top 0.06s ease;
+  box-shadow: 0 0 6px 1px rgba(99, 102, 241, 0.40);
 }
 .pm-drop-line::before {
   content: "";
   position: absolute;
-  left: -4px;
-  top: -4px;
-  width: 10px;
-  height: 10px;
+  left: -5px;
+  top: -5px;
+  width: 13px;
+  height: 13px;
   border-radius: 50%;
   background: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.20);
 }
 
 /* Faded block while dragging */

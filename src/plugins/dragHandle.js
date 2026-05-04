@@ -478,22 +478,31 @@ export function dragHandlePlugin() {
         dropLine.style.opacity = "0";
       });
 
-      // ── Editor: dragover — show the drop-line indicator ───────────────────
+      // ── Drag feedback — listen on wrapper (full #editor column) ─────────────
+      // The handle sits in the left gutter (padding of wrapper), outside
+      // editorView.dom. If we listened only on editorView.dom, dragover would
+      // never fire while the mouse is in the gutter, so the drop-line would
+      // be invisible for the entire left ~52 px of the editor. Using wrapper
+      // means we get events across the whole column.
 
-      editorView.dom.addEventListener("dragover", e => {
+      wrapper.addEventListener("dragover", e => {
         if (draggedPos === null) return;
         e.preventDefault();
         e.dataTransfer.dropEffect = "move";
         showDropLine(dropPosAt(e.clientY));
       });
 
-      editorView.dom.addEventListener("dragleave", () => {
-        if (draggedPos !== null) dropLine.style.opacity = "0";
+      wrapper.addEventListener("dragleave", e => {
+        if (draggedPos === null) return;
+        // Only hide when the mouse truly leaves the wrapper (not just moves
+        // between its children).
+        if (wrapper.contains(e.relatedTarget)) return;
+        dropLine.style.opacity = "0";
       });
 
-      // ── Editor: drop — commit the move ────────────────────────────────────
+      // ── Drop — commit the move ────────────────────────────────────────────
 
-      editorView.dom.addEventListener("drop", e => {
+      wrapper.addEventListener("drop", e => {
         if (draggedPos === null) return;
         e.preventDefault();
         e.stopPropagation();
