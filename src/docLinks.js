@@ -10,6 +10,8 @@
  *     – call again to refresh (re-mounts cleanly into the same container).
  */
 
+import { openGraphModal } from "./docGraph.js";
+
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const LINK_LABELS = {
@@ -228,12 +230,29 @@ async function render(containerEl, docId, readOnly, fromTitle) {
     <div class="doc-links-section">
       <div class="dls-header">
         <span class="dls-title">Related documents <span class="dls-count">(${total})</span></span>
-        ${addBtn}
+        <div class="dls-header-actions">
+          <button class="dls-graph-btn" id="dlsGraphBtn" title="View knowledge graph">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+              <circle cx="3"  cy="8"  r="2"/>
+              <circle cx="13" cy="3"  r="2"/>
+              <circle cx="13" cy="13" r="2"/>
+              <line x1="5"  y1="7.2" x2="11" y2="4"/>
+              <line x1="5"  y1="8.8" x2="11" y2="12"/>
+            </svg>
+            Graph
+          </button>
+          ${addBtn}
+        </div>
       </div>
       ${outHtml}
       ${incHtml}
       ${emptyHtml}
     </div>`;
+
+  // Wire up "Graph" button (always visible)
+  containerEl.querySelector('#dlsGraphBtn')?.addEventListener('click', () => {
+    openGraphModal(docId, fromTitle);
+  });
 
   // Wire up "+ Add link"
   if (!readOnly) {

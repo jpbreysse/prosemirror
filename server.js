@@ -691,6 +691,78 @@ app.delete("/api/docs/:id/versions/:versionId", async (req, res) => {
 const VALID_LINK_TYPES = new Set(['references','supersedes','superseded_by','implements','closes']);
 const INVERSE_LINK = { supersedes: 'superseded_by', superseded_by: 'supersedes' };
 
+// GET /api/docs/:id/graph?depth=N
+// Returns all documents reachable within N hops (both directions) plus all
+// edges between them, using WITH RECURSIVE on pm_document_link.
+// Response: { center, nodes: [{id,title,depth,updated_at}], edges: [{id,source,target,type}] }
+app.get("/api/docs/:id/graph", async (req, res) => {
+  const startId = req.params.id;
+  const depth   = Math.min(Math.max(parseInt(req.query.depth || "3", 10), 1), 8);
+
+  try {
+    // Step 1 — find all reachable node IDs within `depth` hops (undirected BFS)
+    const { rows: reachableRows } = await pool.query(`
+      WITH RECURSIVE reachable(node_id, depth, visited) AS (
+        -- Seed: the starting document
+        SELECT $1::text, 0, ARRAY[$1::text]
+
+        UNION ALL
+
+        -- Follow edges in both directions, avoid already-visited nodes
+        SELECT
+          CASE WHEN l.from_doc = r.node_id THEN l.to_doc ELSE l.from_doc END,
+          r.depth + 1,
+          r.visited || CASE WHEN l.from_doc = r.node_id THEN l.to_doc ELSE l.from_doc END
+        FROM pm_document_link l
+        JOIN reachable r ON (l.from_doc = r.node_id OR l.to_doc = r.node_id)
+        WHERE r.depth < $2
+          AND NOT (
+            CASE WHEN l.from_doc = r.node_id THEN l.to_doc ELSE l.from_doc END
+            = ANY(r.visited)
+          )
+      )
+      SELECT node_id, MIN(depth) AS min_depth
+      FROM reachable
+      GROUP BY node_id
+    `, [startId, depth]);
+
+    const nodeIds  = reachableRows.map(r => r.node_id);
+    const depthMap = Object.fromEntries(reachableRows.map(r => [r.node_id, parseInt(r.min_depth, 10)]));
+
+    // Step 2 — fetch document metadata for all reachable nodes
+    const { rows: docRows } = await pool.query(
+      `SELECT id, title, updated_at FROM pm_documents WHERE id = ANY($1)`,
+      [nodeIds]
+    );
+
+    // Step 3 — fetch all edges whose both endpoints are in the reachable set
+    const { rows: edgeRows } = await pool.query(
+      `SELECT id, from_doc, to_doc, link_type
+       FROM pm_document_link
+       WHERE from_doc = ANY($1) AND to_doc = ANY($1)`,
+      [nodeIds]
+    );
+
+    res.json({
+      center: startId,
+      nodes: docRows.map(d => ({
+        id:         d.id,
+        title:      d.title || "Untitled",
+        depth:      depthMap[d.id] ?? 0,
+        updated_at: d.updated_at,
+      })),
+      edges: edgeRows.map(e => ({
+        id:     e.id,
+        source: e.from_doc,
+        target: e.to_doc,
+        type:   e.link_type,
+      })),
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // GET /api/docs/:id/links  →  { outgoing: [...], incoming: [...] }
 app.get("/api/docs/:id/links", async (req, res) => {
   try {
